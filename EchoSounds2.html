@@ -1,0 +1,3133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EchoTracks — Music Discovery Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B1120;
+    --bg2: #111827;
+    --card: #172033;
+    --card-hover: #1E2D45;
+    --border: rgba(255,255,255,0.07);
+    --border-strong: rgba(255,255,255,0.15);
+    --text: #F8FAFC;
+    --text-muted: #94A3B8;
+    --text-dim: #4B5A70;
+    --accent: #3B82F6;
+    --accent2: #93C5FD;
+    --accent-glow: rgba(59,130,246,0.25);
+    --gem: #F59E0B;
+    --gem-glow: rgba(245,158,11,0.2);
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(59,130,246,0.07) 0%, transparent 70%);
+    top: -150px; left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ─── HEADER ─── */
+  header { padding: 48px 0 0; text-align: center; }
+
+  .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(59,130,246,0.12);
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  .logo-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50% { opacity:0.4; transform:scale(0.75); }
+  }
+
+  h1 {
+    font-family: 'Sora', sans-serif;
+    font-size: clamp(2.8rem, 7vw, 5rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -2px;
+    margin-bottom: 16px;
+  }
+
+  h1 .echo { color: var(--accent); }
+  h1 .tracks { color: var(--accent2); }
+
+  .tagline {
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    font-weight: 300;
+    margin-bottom: 40px;
+  }
+
+  /* ─── SEARCH ─── */
+  .search-wrapper {
+    max-width: 640px;
+    margin: 0 auto 14px;
+    position: relative;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 20px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 19px;
+    color: var(--text-dim);
+    pointer-events: none;
+    transition: color 0.2s;
+  }
+
+  #search-input {
+    width: 100%;
+    background: var(--card);
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: 18px 150px 18px 52px;
+    font-size: 1.05rem;
+    font-family: 'Outfit', sans-serif;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  #search-input::placeholder { color: var(--text-dim); }
+  #search-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  #discover-btn {
+    position: absolute;
+    right: 8px; top: 50%;
+    transform: translateY(-50%);
+    background: linear-gradient(135deg, var(--accent), #1D4ED8);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 22px;
+    color: #fff;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    white-space: nowrap;
+  }
+
+  #discover-btn:hover { opacity: 0.88; transform: translateY(-50%) scale(1.02); }
+  #discover-btn:active { transform: translateY(-50%) scale(0.97); }
+  #discover-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .quick-pills {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 52px;
+  }
+
+  .pill {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .pill:hover {
+    background: rgba(59,130,246,0.12);
+    border-color: rgba(59,130,246,0.4);
+    color: var(--accent);
+  }
+
+  /* ─── TRAIL ─── */
+  #trail-section { display: none; margin-bottom: 28px; }
+
+  .trail-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  .trail { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  .trail-item { display: flex; align-items: center; gap: 8px; }
+
+  .trail-name {
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.25);
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-size: 0.8rem;
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .trail-name:hover { background: rgba(59,130,246,0.22); }
+  .trail-name.current { background: var(--accent); color: #fff; cursor: default; }
+  .trail-arrow { color: var(--text-dim); font-size: 0.8rem; }
+
+  /* ─── LOADING ─── */
+  #loading { display: none; text-align: center; padding: 80px 0; }
+
+  .spinner {
+    width: 44px; height: 44px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 18px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text { color: var(--text-muted); font-size: 0.9rem; }
+
+  /* ─── ERROR ─── */
+  #error-msg {
+    display: none;
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: var(--radius-sm);
+    padding: 14px 20px;
+    color: #FCA5A5;
+    margin-bottom: 28px;
+    text-align: center;
+    font-size: 0.88rem;
+  }
+
+  /* ─── ARTIST HERO ─── */
+  #artist-hero { display: none; margin-bottom: 32px; }
+
+  .hero-inner {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .hero-bg-blur {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center top;
+    filter: blur(50px) brightness(0.2) saturate(1.4);
+    transform: scale(1.15);
+    z-index: 0;
+    transition: background-image 0.4s;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    padding: 32px 36px;
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+  }
+
+  .hero-img-wrap { flex-shrink: 0; }
+
+  .hero-img {
+    width: 150px; height: 150px;
+    border-radius: 14px;
+    object-fit: cover;
+    object-position: center top;
+    border: 2px solid var(--border-strong);
+    display: block;
+    background: var(--bg2);
+  }
+
+  .hero-img-placeholder {
+    width: 150px; height: 150px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #1a2a4a, #111827);
+    border: 2px solid var(--border-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Sora', sans-serif;
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .hero-info { flex: 1; min-width: 0; }
+
+  .hero-name {
+    font-family: 'Sora', sans-serif;
+    font-size: clamp(1.8rem, 4.5vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -1px;
+    margin-bottom: 10px;
+    line-height: 1.1;
+  }
+
+  .hero-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+
+  .tag {
+    background: rgba(147,197,253,0.1);
+    border: 1px solid rgba(147,197,253,0.22);
+    border-radius: 100px;
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    color: var(--accent2);
+    font-weight: 500;
+  }
+
+  .hero-stats { display: flex; gap: 28px; margin-bottom: 16px; flex-wrap: wrap; }
+
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat-val { font-size: 1.2rem; font-weight: 600; }
+  .stat-label { font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .hero-bio {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+    max-height: 70px;
+    overflow: hidden;
+  }
+
+  .bio-more {
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 0.82rem;
+    margin-top: 6px;
+    display: none;
+  }
+
+  /* ─── GRID ─── */
+  .results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  .results-grid.full { grid-template-columns: 1fr; }
+
+  @media (max-width: 700px) {
+    .results-grid { grid-template-columns: 1fr; }
+    .hero-content { flex-direction: column; }
+    .hero-img, .hero-img-placeholder { width: 100px; height: 100px; font-size: 2rem; }
+
+    /* Reorder: player appears between tracks and similar on mobile */
+    #tracks-player-wrap {
+      display: flex;
+      flex-direction: column;
+    }
+    #tracks-player-wrap .results-grid {
+      display: contents; /* let children participate in the flex flow */
+    }
+    /* Popular Tracks card = order 1 */
+    #tracks-player-wrap .results-grid .section-card:first-child { order: 1; }
+    /* Player = order 2 */
+    #now-playing-section { order: 2; }
+    /* Similar Artists card = order 3 */
+    #tracks-player-wrap .results-grid .section-card:last-child { order: 3; }
+
+    /* Albums: 2 per row on mobile */
+    .album-grid-main,
+    .album-grid-extra { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ─── SECTION CARDS ─── */
+  .section-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 20px 13px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-icon {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .icon-blue  { background: rgba(59,130,246,0.15); color: var(--accent); }
+  .icon-sky   { background: rgba(147,197,253,0.12); color: var(--accent2); }
+  .icon-amber { background: rgba(245,158,11,0.12); color: var(--gem); }
+
+  .section-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    flex: 1;
+  }
+
+  .section-count {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    background: rgba(255,255,255,0.05);
+    border-radius: 100px;
+    padding: 2px 8px;
+  }
+
+  .section-body { padding: 10px 0; }
+
+  /* ─── TRACKS ─── */
+  .track-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 9px 20px;
+    transition: background 0.15s;
+  }
+
+  .track-item:hover { background: rgba(255,255,255,0.025); }
+
+  .track-num {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+    font-family: 'Sora', sans-serif;
+  }
+
+  .track-name {
+    flex: 1;
+    font-size: 0.9rem;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .track-plays { font-size: 0.72rem; color: var(--text-dim); flex-shrink: 0; }
+
+  /* ─── TRACK PLAY BUTTON ─── */
+  .track-item {
+    cursor: pointer;
+  }
+
+  .track-play-btn {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: rgba(59,130,246,0.0);
+    border: 1px solid transparent;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 10px;
+    color: var(--text-dim);
+    transition: all 0.18s;
+  }
+
+  .track-item:hover .track-play-btn {
+    background: rgba(59,130,246,0.18);
+    border-color: rgba(59,130,246,0.4);
+    color: var(--accent);
+  }
+
+  .track-item.playing .track-play-btn {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .track-item.playing .track-name { color: var(--accent); }
+  .track-item.playing .track-num  { color: var(--accent); }
+
+  /* ─── NOW PLAYING PLAYER ─── */
+  #now-playing-section { margin-bottom: 20px; }
+
+  .player-card {
+    background: var(--card);
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 0 0 1px var(--accent-glow);
+  }
+
+  #player-play-btn:hover { transform: scale(1.08); background: #2563eb; }
+  #player-prev-btn:hover, #player-next-btn:hover {
+    background: rgba(59,130,246,0.18);
+    border-color: rgba(59,130,246,0.4);
+    color: var(--accent);
+    transform: scale(1.08);
+  }
+
+  /* ─── ARTIST IMAGE GALLERY LIGHTBOX ─── */
+  #img-lightbox {
+    display: none;
+    position: fixed; inset: 0;
+    background: #000;
+    z-index: 9999;
+    align-items: center; justify-content: center;
+    animation: lbIn 0.18s ease;
+  }
+  #img-lightbox.active { display: flex; }
+
+  /* Full-bleed background that blurs behind the image */
+  #img-lb-bg {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center;
+    filter: blur(28px) brightness(0.35) saturate(1.4);
+    transform: scale(1.08);
+  }
+
+  .img-lb-close {
+    position: absolute; top: 14px; right: 16px;
+    font-size: 1.8rem; color: rgba(255,255,255,0.75);
+    cursor: pointer; line-height: 1; user-select: none;
+    transition: color 0.15s; z-index: 4;
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .img-lb-close:hover { color: #fff; }
+
+  .img-lb-arrow {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.22);
+    color: #fff; font-size: 1.1rem;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s; user-select: none; z-index: 4;
+  }
+  .img-lb-arrow:hover { background: var(--accent); border-color: var(--accent); }
+  .img-lb-arrow.prev { left: 8px; }
+  .img-lb-arrow.next { right: 8px; }
+  .img-lb-arrow.hidden { opacity: 0; pointer-events: none; }
+
+  .img-lb-content {
+    position: relative; z-index: 3;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    width: 100%; height: 100%;
+    /* Tight padding: just enough for arrows (48px) + footer (48px) */
+    padding: 48px 56px 52px;
+    box-sizing: border-box;
+  }
+
+  #img-lightbox-img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto; height: auto;
+    object-fit: contain;
+    border-radius: 6px;
+    box-shadow: 0 8px 60px rgba(0,0,0,0.7);
+    transition: opacity 0.22s;
+    display: block;
+    flex-shrink: 1;
+  }
+
+  .img-lb-footer {
+    position: absolute; bottom: 12px; left: 0; right: 0;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    z-index: 4;
+  }
+  .img-lb-counter { font-size: 0.72rem; color: rgba(255,255,255,0.5); letter-spacing: 1px; }
+  .img-lb-dots { display: flex; gap: 7px; justify-content: center; flex-wrap: wrap; max-width: 320px; }
+  .img-lb-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: rgba(255,255,255,0.28); cursor: pointer; transition: all 0.15s;
+  }
+  .img-lb-dot.active { background: #fff; transform: scale(1.45); }
+  .hero-img { cursor: zoom-in; transition: opacity 0.2s; }
+  .hero-img:hover { opacity: 0.88; }
+
+  @media (max-width: 600px) {
+    /* On phones: minimal padding so image fills the screen */
+    .img-lb-content {
+      padding: 44px 48px 50px;
+    }
+    .img-lb-arrow {
+      width: 36px; height: 36px; font-size: 1rem;
+    }
+    .img-lb-arrow.prev { left: 4px; }
+    .img-lb-arrow.next { right: 4px; }
+    #img-lightbox-img {
+      border-radius: 4px;
+    }
+  }
+
+  /* ─── ARTIST CARDS ─── */
+  .artist-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  /* Hide items 9-10 on desktop (gems shows 8 in 4×2) */
+  .artist-cards .artist-card:nth-child(n+9) {
+    display: none;
+  }
+
+  /* Similar Artists: 3 columns on desktop, hide 10th */
+  .similar-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 12px 14px;
+  }
+  .similar-cards .artist-card:nth-child(10) {
+    display: none; /* desktop shows 9 (3×3); 10th hidden */
+  }
+
+  @media (max-width: 600px) {
+    /* Mobile: 2-col for both similar and gems */
+    .similar-cards,
+    .artist-cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    /* Show all 10 gems on mobile */
+    .artist-cards .artist-card:nth-child(n+9) {
+      display: block;
+    }
+    /* Show all 10 similar artists on mobile */
+    .similar-cards .artist-card:nth-child(10) {
+      display: block;
+    }
+    /* Albums on mobile: hide cards 5-8 in main grid by default */
+    .album-grid-main .album-card:nth-child(n+5) {
+      display: none;
+    }
+    /* When "View All" is active, reveal those hidden main cards too */
+    .album-grid-extra.visible ~ * .album-card:nth-child(n+5),
+    .album-grid-section.expanded .album-grid-main .album-card:nth-child(n+5) {
+      display: block;
+    }
+    /* Two columns for albums on mobile */
+    .album-grid-main,
+    .album-grid-extra { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .artist-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 10px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .artist-card:hover {
+    background: var(--card-hover);
+    border-color: rgba(59,130,246,0.45);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+  }
+
+  .artist-card.gem { border-color: rgba(245,158,11,0.18); }
+
+  .artist-card.gem:hover {
+    border-color: rgba(245,158,11,0.55);
+    background: rgba(245,158,11,0.05);
+  }
+
+  .gem-badge {
+    position: absolute;
+    top: 7px; right: 8px;
+    font-size: 9px;
+    color: var(--gem);
+  }
+
+  .artist-avatar {
+    width: 68px; height: 68px;
+    border-radius: 10px;
+    object-fit: cover;
+    object-position: center top;
+    margin: 0 auto 9px;
+    display: block;
+    background: var(--bg2);
+    transition: opacity 0.3s;
+  }
+
+  .artist-avatar-placeholder {
+    width: 68px; height: 68px;
+    border-radius: 10px;
+    margin: 0 auto 9px;
+    background: linear-gradient(135deg, #1a2a4a, #111827);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Sora', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--accent);
+    border: 1px solid rgba(59,130,246,0.15);
+  }
+
+  .artist-card-name {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .artist-card-sub {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    margin-top: 3px;
+  }
+
+  .artist-card-explore {
+    font-size: 0.68rem;
+    color: var(--accent);
+    margin-top: 5px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .artist-card:hover .artist-card-explore { opacity: 1; }
+
+  /* ─── GEMS INTRO ─── */
+  .gems-intro {
+    margin: 0 20px 10px;
+    padding: 10px 14px;
+    background: rgba(245,158,11,0.07);
+    border: 1px solid rgba(245,158,11,0.18);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    color: #D4A84B;
+    line-height: 1.5;
+  }
+
+  /* ─── RABBIT HOLE ─── */
+  .rabbit-hole-banner {
+    background: linear-gradient(135deg, rgba(59,130,246,0.09), rgba(147,197,253,0.05));
+    border: 1px solid rgba(59,130,246,0.22);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    text-align: center;
+    margin-bottom: 20px;
+    display: none;
+  }
+
+  .rabbit-hole-banner h3 {
+    font-family: 'Sora', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .rabbit-hole-banner p { font-size: 0.85rem; color: var(--text-muted); }
+
+  /* ─── FOOTER ─── */
+  footer {
+    text-align: center;
+    padding: 48px 0 28px;
+    color: var(--text-dim);
+    font-size: 0.76rem;
+  }
+
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ─── ANIMATIONS ─── */
+  .fade-in { animation: fadeIn 0.4s ease both; }
+  .d1 { animation-delay: 0.05s; }
+  .d2 { animation-delay: 0.12s; }
+  .d3 { animation-delay: 0.2s; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  #results-section { display: none; }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+  .empty-state { text-align: center; padding: 32px; color: var(--text-dim); font-size: 0.85rem; }
+
+  /* ─── SPOTIFY PANEL ─── */
+  .icon-green { background: rgba(29,185,84,0.15); color: #1DB954; }
+  .icon-purple { background: rgba(167,139,250,0.15); color: #a78bfa; }
+  .icon-pink { background: rgba(244,114,182,0.15); color: #f472b6; }
+
+  .popularity-bar-wrap {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 20px 6px;
+  }
+  .popularity-bar-track {
+    flex: 1; height: 6px; background: rgba(255,255,255,0.08);
+    border-radius: 6px; overflow: hidden;
+  }
+  .popularity-bar-fill {
+    height: 100%; background: linear-gradient(90deg, #1DB954, #4ade80);
+    border-radius: 6px; transition: width 0.8s ease;
+    width: 0%;
+  }
+  .popularity-label { font-size: 0.72rem; color: var(--text-dim); white-space: nowrap; }
+  .popularity-val { font-size: 0.85rem; font-weight: 600; color: var(--text); min-width: 32px; text-align: right; }
+
+  .info-rows { padding: 6px 0 10px; }
+  .info-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.82rem;
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-row-label { color: var(--text-dim); flex-shrink: 0; margin-right: 12px; }
+  .info-row-val { color: var(--text); text-align: right; font-weight: 500; }
+
+  .genre-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 20px 14px; justify-content: center; }
+  .genre-chip {
+    background: rgba(29,185,84,0.1); border: 1px solid rgba(29,185,84,0.25);
+    border-radius: 100px; padding: 3px 10px;
+    font-size: 0.72rem; color: #4ade80; font-weight: 500;
+  }
+
+  /* ─── ALBUM GRID ─── */
+  .album-grid-section { padding: 4px 16px 16px; }
+
+  .album-grid-main {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .album-grid-extra {
+    display: none;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .album-grid-extra.visible { display: grid; }
+
+  .album-card {
+    cursor: pointer;
+    border-radius: 10px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+    position: relative;
+  }
+  .album-card:hover {
+    transform: translateY(-3px) scale(1.02);
+    border-color: rgba(29,185,84,0.45);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  .album-card-img {
+    width: 100%; aspect-ratio: 1/1;
+    object-fit: cover; display: block; background: var(--bg2);
+  }
+  .album-card-placeholder {
+    width: 100%; aspect-ratio: 1/1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem;
+    background: linear-gradient(135deg, #1a2a4a, #111827);
+  }
+  .album-card-info { padding: 7px 9px 9px; }
+  .album-card-name {
+    font-size: 0.73rem; font-weight: 500; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px;
+  }
+  .album-card-year { font-size: 0.63rem; color: var(--text-dim); }
+  .album-card-zoom {
+    position: absolute; top: 5px; right: 5px;
+    background: rgba(0,0,0,0.6); border-radius: 50%;
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem; color: rgba(255,255,255,0.85);
+    opacity: 0; transition: opacity 0.15s; pointer-events: none;
+  }
+  .album-card:hover .album-card-zoom { opacity: 1; }
+
+  .album-view-all-btn {
+    width: 100%; padding: 9px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text-muted);
+    font-size: 0.78rem; font-weight: 500; cursor: pointer;
+    transition: all 0.15s; text-align: center;
+  }
+  .album-view-all-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); border-color: var(--accent); }
+
+  @media (max-width: 600px) {
+    .album-grid-main,
+    .album-grid-extra { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ─── ALBUM LIGHTBOX ─── */
+  #album-lightbox {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.93);
+    z-index: 10000;
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(10px);
+    animation: lbIn 0.18s ease;
+  }
+  #album-lightbox.active { display: flex; }
+  .alb-lb-close {
+    position: absolute; top: 18px; right: 22px;
+    font-size: 1.6rem; color: rgba(255,255,255,0.6);
+    cursor: pointer; line-height: 1; user-select: none;
+    transition: color 0.15s; z-index: 2;
+  }
+  .alb-lb-close:hover { color: #fff; }
+  .alb-lb-arrow {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.18);
+    color: #fff; font-size: 1.2rem;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s; user-select: none; z-index: 2;
+  }
+  .alb-lb-arrow:hover { background: var(--accent); border-color: var(--accent); }
+  .alb-lb-arrow.prev { left: 18px; }
+  .alb-lb-arrow.next { right: 18px; }
+  .alb-lb-arrow.hidden { opacity: 0.18; pointer-events: none; }
+  .alb-lb-content {
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    max-width: min(88vw, 480px); text-align: center;
+  }
+  #alb-lb-img {
+    width: min(80vw, 460px); height: min(80vw, 460px);
+    object-fit: cover; border-radius: 16px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.85);
+    transition: opacity 0.2s; display: block;
+  }
+  #alb-lb-title {
+    font-family: 'Sora', sans-serif; font-size: 1.15rem; font-weight: 700;
+    color: var(--text); text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+  }
+  #alb-lb-year { font-size: 0.8rem; color: var(--text-muted); margin-top: -10px; }
+  #alb-lb-counter { font-size: 0.72rem; color: var(--text-dim); letter-spacing: 1px; }
+  .alb-lb-dots { display: flex; gap: 7px; justify-content: center; flex-wrap: wrap; max-width: 320px; }
+  .alb-lb-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: rgba(255,255,255,0.22); cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+  }
+  .alb-lb-dot.active { background: var(--accent); transform: scale(1.45); }
+
+  /* Artist Info — responsive pill grid */
+  .artist-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0;
+    padding: 4px 0 8px;
+  }
+
+  .info-row {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.82rem;
+  }
+
+  .info-row:last-child { border-bottom: none; }
+  .info-row-label { color: var(--text-dim); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; font-weight: 600; }
+  .info-row-val { color: var(--text); font-weight: 500; font-size: 0.88rem; }
+
+  /* Wikipedia control buttons */
+  .wiki-ctrl-btn {
+    font-size: 0.72rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .wiki-ctrl-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+  .wiki-ctrl-ext { color: var(--accent); border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.07); }
+  .wiki-ctrl-ext:hover { background: rgba(59,130,246,0.15); }
+
+  /* Inline wiki buttons (below text) */
+  .wiki-inline-btn {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-strong);
+    background: rgba(255,255,255,0.05);
+    color: var(--text-muted);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .wiki-inline-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); border-color: rgba(255,255,255,0.25); }
+  .wiki-inline-collapse { border-color: rgba(59,130,246,0.3); color: var(--accent2); background: rgba(59,130,246,0.06); }
+  .wiki-inline-collapse:hover { background: rgba(59,130,246,0.14); }
+  .wiki-inline-ext { border-color: rgba(59,130,246,0.35); color: var(--accent); background: rgba(59,130,246,0.08); }
+  .wiki-inline-ext:hover { background: rgba(59,130,246,0.18); }
+
+  .wiki-body {
+    padding: 14px 20px 16px;
+    font-size: 0.86rem;
+    color: var(--text-muted);
+    line-height: 1.78;
+  }
+
+  .member-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 20px 14px; }
+  .member-chip {
+    background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.25);
+    border-radius: 100px; padding: 4px 12px;
+    font-size: 0.75rem; color: #c4b5fd; font-weight: 500;
+  }
+
+  .facts-list { padding: 10px 0; }
+  .fact-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.84rem; color: var(--text-muted); line-height: 1.6;
+  }
+  .fact-item:last-child { border-bottom: none; }
+  .fact-bullet { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+
+  /* ─── DID YOU KNOW ─── */
+  .icon-gold { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .facts-list { padding: 10px 0; }
+  .fact-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.83rem; color: var(--text-muted); line-height: 1.55;
+  }
+  .fact-item:last-child { border-bottom: none; }
+  .fact-bullet {
+    font-size: 1rem; flex-shrink: 0; margin-top: 1px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo-badge"><span class="logo-dot"></span> Music Discovery Engine</div>
+    <h1><span class="echo">Echo</span><span class="tracks">Tracks</span></h1>
+    <h2><b><st>Follow the rabbit hole  </h2></st></b>
+    <p style="margin-bottom: 1px;">
+   <h2><b><st>Discover the music you're missing.</h2></st></b>
+<br></p>
+ <p class="tagline" ><b>Explore artist connections, uncover hidden gems, and find your next favorite band.</b></p>
+    <div class="search-wrapper">
+      <input type="text" id="search-input" placeholder="Enter an artist — Metallica, Tool, Radiohead…" autocomplete="off" />
+      <span class="search-icon">⌕</span>
+      <button id="discover-btn" onclick="discover()">Discover ↗</button>
+    </div>
+ <div class="quick-pills">
+     <span class="pill" onclick="quickSearch('Metallica')">Metallica</span>
+      <span class="pill" onclick="quickSearch('Nirvana')">Nirvana</span>
+      <span class="pill" onclick="quickSearch('Rolling Stones')">Rolling Stones</span>
+      <span class="pill" onclick="quickSearch('Elton John')">Elton John</span>
+      <span class="pill" onclick="quickSearch('Pink Floyd')">Pink Floyd</span>
+      <span class="pill" onclick="quickSearch('Michael Jackson')">Michael Jackson</span> 
+    </div>
+ 
+   
+
+  </header>
+
+  <!-- Trail -->
+  <div id="trail-section">
+    <div class="trail-label">Your Discovery Trail</div>
+    <div class="trail" id="trail"></div>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">Searching Last.fm…</div>
+  </div>
+
+  <!-- Error -->
+  <div id="error-msg"></div>
+
+  <!-- Results -->
+  <div id="results-section">
+
+    <!-- Rabbit hole banner -->
+    <div class="rabbit-hole-banner" id="rabbit-hole-banner">
+      <h3> Deep down the Rabbit Hole</h3>
+      <p>Click any artist card to keep exploring. Your trail is tracked above.</p>
+    </div>
+
+    <!-- Hero -->
+    <div id="artist-hero" class="fade-in">
+      <div class="hero-inner">
+        <div class="hero-bg-blur" id="hero-bg"></div>
+        <div class="hero-content">
+          <div class="hero-img-wrap" id="hero-img-wrap"></div>
+          <div class="hero-info">
+            <div class="hero-name" id="hero-name"></div>
+            <div class="hero-tags" id="hero-tags"></div>
+            <div class="hero-stats" id="hero-stats"></div>
+            <div class="hero-bio" id="hero-bio"></div>
+            <span class="bio-more" id="bio-more" onclick="expandBio()">Read more →</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tracks + Similar + Player (mobile reorder wrapper) -->
+    <div id="tracks-player-wrap">
+
+    <!-- Tracks + Similar -->
+    <div class="results-grid fade-in d1">
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-icon icon-blue">♪</div>
+          <div class="section-title">Popular Tracks</div>
+        </div>
+        <div class="section-body" id="tracks-list"></div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-icon icon-sky">◈</div>
+          <div class="section-title">Similar Artists</div>
+          <span class="section-count" id="similar-count"></span>
+        </div>
+        <div class="section-body">
+          <div class="similar-cards" id="similar-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Now Playing -->
+    <div id="now-playing-section" style="display:none;margin-bottom:20px">
+      <div class="player-card" id="player-card">
+
+        <!-- Loading state -->
+        <div id="player-loading" style="display:none;padding:18px 20px;align-items:center;gap:14px">
+          <div class="spinner" style="width:24px;height:24px;border-width:2px;margin:0;flex-shrink:0"></div>
+          <span style="font-size:0.85rem;color:var(--text-muted)">Finding preview…</span>
+        </div>
+
+        <!-- Player UI -->
+        <div id="player-ui" style="display:none;flex-direction:column">
+
+          <!-- Top row: art + info + links -->
+          <div style="display:flex;align-items:center;gap:14px;padding:14px 16px 10px">
+            <img id="player-art" src="" alt=""
+              style="width:54px;height:54px;border-radius:8px;object-fit:cover;flex-shrink:0;background:var(--card-hover)">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--text-dim);font-weight:600;margin-bottom:2px">Now Playing · 30s Preview</div>
+              <div id="player-track" style="font-size:0.9rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+              <div id="player-artist" style="font-size:0.76rem;color:var(--text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+              <a id="player-spotify-link" href="#" target="_blank" rel="noopener"
+                style="font-size:0.67rem;padding:4px 10px;border-radius:6px;background:#1DB954;color:#000;font-weight:700;text-decoration:none;text-align:center">Spotify</a>
+              <a id="player-yt-link" href="#" target="_blank" rel="noopener"
+                style="font-size:0.67rem;padding:4px 10px;border-radius:6px;background:rgba(239,68,68,0.85);color:#fff;font-weight:700;text-decoration:none;text-align:center">YouTube</a>
+            </div>
+          </div>
+
+          <!-- Controls: always full-width below the top row -->
+          <div style="padding:0 16px 14px">
+            <!-- Progress bar -->
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+              <span id="player-current" style="font-size:0.7rem;color:var(--text-dim);width:28px;text-align:right;font-variant-numeric:tabular-nums;flex-shrink:0">0:00</span>
+              <div id="player-progress-track" onclick="playerSeek(event)"
+                style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:4px;cursor:pointer;position:relative;min-width:0">
+                <div id="player-progress-fill" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width 0.25s linear;pointer-events:none"></div>
+              </div>
+              <span id="player-duration" style="font-size:0.7rem;color:var(--text-dim);width:28px;font-variant-numeric:tabular-nums;flex-shrink:0">0:30</span>
+            </div>
+          <!-- Play + prev/next + volume -->
+            <div style="display:flex;align-items:center;gap:10px">
+              <button id="player-prev-btn" onclick="playerPrev()"
+                title="Previous track"
+                style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:var(--text-muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s">⏮</button>
+              <button id="player-play-btn" onclick="playerTogglePlay()"
+                style="width:40px;height:40px;border-radius:50%;background:var(--accent);border:none;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform 0.1s,background 0.15s">▶</button>
+              <button id="player-next-btn" onclick="playerNext()"
+                title="Next track"
+                style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:var(--text-muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s">⏭</button>
+              <span style="font-size:0.8rem;flex-shrink:0;margin-left:4px">🔈</span>
+              <input id="player-volume" type="range" min="0" max="1" step="0.05" value="0.8"
+                oninput="playerSetVolume(this.value)"
+                style="flex:1;accent-color:var(--accent);cursor:pointer;height:4px;min-width:0">
+              <span style="font-size:0.8rem;flex-shrink:0">🔊</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- No preview found state -->
+        <div id="player-noresult" style="display:none;padding:16px 20px;align-items:center;gap:14px;flex-wrap:wrap">
+          <span style="font-size:0.85rem;color:var(--text-muted);flex:1">No preview available — listen on:</span>
+          <div style="display:flex;gap:8px">
+            <a id="nr-spotify" href="#" target="_blank" style="padding:6px 14px;background:#1DB954;color:#000;border-radius:8px;text-decoration:none;font-size:0.8rem;font-weight:700">Spotify</a>
+            <a id="nr-youtube" href="#" target="_blank" style="padding:6px 14px;background:#FF0000;color:#fff;border-radius:8px;text-decoration:none;font-size:0.8rem;font-weight:700">YouTube</a>
+          </div>
+        </div>
+
+        <audio id="player-audio" preload="none"></audio>
+      </div>
+    </div>
+
+    </div><!-- /tracks-player-wrap -->
+
+    <!-- ═══ ENRICHED DATA ROW ═══ -->
+    <!-- Spotify Panel (full width) -->
+    <div class="section-card fade-in d2" id="spotify-panel" style="display:none;margin-bottom:20px">
+      <div class="section-header">
+        <div class="section-icon icon-green">♫</div>
+        <div class="section-title">Spotify</div>
+        <span class="section-count" id="spotify-followers"></span>
+      </div>
+      <div class="popularity-bar-wrap">
+        <span class="popularity-label">Popularity</span>
+        <div class="popularity-bar-track"><div class="popularity-bar-fill" id="spotify-pop-bar"></div></div>
+        <span class="popularity-val" id="spotify-pop-val">—</span>
+      </div>
+      <div class="genre-chips" id="spotify-genres"></div>
+      <div class="section-header" style="border-top:1px solid var(--border)">
+        <div class="section-title" style="font-size:0.7rem">Albums</div>
+      </div>
+      <div class="album-grid" id="spotify-albums"></div>
+    </div>
+
+    <!-- Artist Info Panel (full width, rich) -->
+    <div class="section-card fade-in d2" id="mb-panel" style="display:none;margin-bottom:20px">
+      <div class="section-header">
+        <div class="section-icon icon-purple">◎</div>
+        <div class="section-title">Artist Info</div>
+      </div>
+      <div class="artist-info-grid" id="mb-info-rows"></div>
+      <div id="mb-members-wrap" style="display:none">
+        <div class="section-header" style="border-top:1px solid var(--border)">
+          <div class="section-title" style="font-size:0.7rem">Members</div>
+        </div>
+        <div class="member-chips" id="mb-members"></div>
+      </div>
+    </div>
+
+    <!-- Wikipedia Bio (full width) -->
+    <div class="section-card fade-in d2" id="wiki-panel" style="display:none;margin-bottom:20px">
+      <div class="section-header">
+        <div class="section-icon icon-sky">📖</div>
+        <div class="section-title">Wikipedia</div>
+      </div>
+      <div class="wiki-body" id="wiki-body"></div>
+    </div>
+
+    <!-- Did You Know (full width) -->
+    <div class="section-card results-grid full fade-in d2" id="facts-panel" style="display:none;margin-bottom:20px">
+      <div class="section-header">
+        <div class="section-icon icon-gold">💡</div>
+        <div class="section-title">Did You Know?</div>
+      </div>
+      <div class="facts-list" id="facts-list"></div>
+    </div>
+
+    <!-- Hidden Gems -->
+    <div class="section-card results-grid full fade-in d2" id="gems-section" style="display:none">
+      <div class="section-header">
+        <div class="section-icon icon-amber">◆</div>
+        <div class="section-title">Hidden Gems</div>
+        <span class="section-count" id="gems-count"></span>
+      </div>
+      <div class="gems-intro" id="gems-intro"></div>
+      <div class="section-body">
+        <div class="artist-cards" id="gems-list"></div>
+      </div>
+    </div>
+
+  </div><!-- /results-section -->
+
+  <footer>
+    Powered by <a href="https://www.last.fm/api" target="_blank">Last.fm</a> ·
+    <a href="https://developer.spotify.com" target="_blank">Spotify</a> ·
+    <a href="https://musicbrainz.org" target="_blank">MusicBrainz</a> ·
+    <a href="https://wikipedia.org" target="_blank">Wikipedia</a> ·
+    Images via <a href="https://www.theaudiodb.com" target="_blank">TheAudioDB</a> ·
+    Built for music discovery
+  </footer>
+</div>
+
+<!-- Artist image gallery lightbox -->
+<div id="img-lightbox">
+  <div id="img-lb-bg"></div>
+  <span class="img-lb-close" onclick="closeLightbox()">✕</span>
+  <button class="img-lb-arrow prev" id="img-lb-prev" onclick="imgLbNav(-1)">&#8592;</button>
+  <div class="img-lb-content">
+    <img id="img-lightbox-img" src="" alt="">
+  </div>
+  <button class="img-lb-arrow next" id="img-lb-next" onclick="imgLbNav(1)">&#8594;</button>
+  <div class="img-lb-footer">
+    <div class="img-lb-counter" id="img-lb-counter"></div>
+    <div class="img-lb-dots" id="img-lb-dots"></div>
+  </div>
+</div>
+
+<!-- Album lightbox -->
+<div id="album-lightbox">
+  <span class="alb-lb-close" onclick="closeAlbumLightbox()">✕</span>
+  <button class="alb-lb-arrow prev" id="alb-prev" onclick="albumLbNav(-1)">&#8592;</button>
+  <div class="alb-lb-content">
+    <img id="alb-lb-img" src="" alt="">
+    <div id="alb-lb-title"></div>
+    <div id="alb-lb-year"></div>
+    <div id="alb-lb-counter"></div>
+    <div class="alb-lb-dots" id="alb-lb-dots"></div>
+  </div>
+  <button class="alb-lb-arrow next" id="alb-next" onclick="albumLbNav(1)">&#8594;</button>
+</div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+const LFM_KEY = '82b31c3afe04ab53749cd06ce7ca3983';
+const LFM_BASE = 'https://ws.audioscrobbler.com/2.0/';
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let trail = [];
+const imgCache = {};
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function fmt(n) {
+  if (!n) return '—';
+  n = parseInt(n);
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (n >= 1_000)     return Math.round(n / 1_000) + 'K';
+  return n.toString();
+}
+
+function initials(name) {
+  return name.trim().split(/\s+/).map(w => w[0] || '').join('').slice(0, 2).toUpperCase();
+}
+
+function stripHtml(html) {
+  return (html || '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#039;/g, "'")
+    .replace(/Read more on Last\.fm\.?\s*$/i, '')
+    .trim();
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideError() { document.getElementById('error-msg').style.display = 'none'; }
+
+function setLoading(show, text = 'Searching Last.fm…') {
+  document.getElementById('loading').style.display = show ? 'block' : 'none';
+  document.getElementById('loading-text').textContent = text;
+  document.getElementById('discover-btn').disabled = show;
+}
+
+// ─── IMAGE FETCHING ───────────────────────────────────────────────────────────
+// Strict priority waterfall — best quality first, no race.
+// Prevents the flicker where a fast-but-bad image loads then gets replaced.
+async function fetchArtistImage(name) {
+  if (name in imgCache) return imgCache[name];
+
+  // Mark as pending to prevent duplicate concurrent fetches
+  imgCache[name] = null;
+
+  // Tier 1: TheAudioDB — curated press/promo shots, best quality
+  let url = await tryTheAudioDB(name);
+  // Tier 2: Spotify — official high-res artist photos
+  if (!url) url = await trySpotifyImage(name);
+  // Tier 3: Deezer — fast, CORS-open, great coverage
+  if (!url) url = await tryDeezer(name);
+  // Tier 4: Wikipedia music-aware variants
+  if (!url) url = await tryWikipediaMusic(name);
+  // Tier 5: iTunes store
+  if (!url) url = await tryItunes(name);
+  // Tier 6: Last.fm (often low-res)
+  if (!url) url = await tryLastFmImage(name);
+  // Tier 7: MusicBrainz cover art (slowest, last resort)
+  if (!url) url = await tryMusicBrainzImage(name);
+
+  imgCache[name] = url;
+  return url;
+}
+
+// Deezer — free, CORS-open, excellent press photos
+async function tryDeezer(name) {
+  try {
+    const res = await fetch(`https://api.deezer.com/search/artist?q=${encodeURIComponent(name)}&limit=10`);
+    if (!res.ok) return null;
+    const d = await res.json();
+    const items = d?.data || [];
+    const match = items.find(a => a.name.toLowerCase() === name.toLowerCase()) || items[0];
+    return match?.picture_xl || match?.picture_big || null;
+  } catch { return null; }
+}
+
+// Spotify image (reuses token from enrichment flow)
+async function trySpotifyImage(name) {
+  try {
+    const token = await getSpotifyTokenPublic();
+    const res = await fetch(
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(name)}&type=artist&limit=5`,
+      { headers: { Authorization: 'Bearer ' + token } }
+    );
+    if (!res.ok) return null;
+    const d = await res.json();
+    const items = d?.artists?.items || [];
+    const match = items.find(a => a.name.toLowerCase() === name.toLowerCase()) || items[0];
+    return match?.images?.[0]?.url || null;
+  } catch { return null; }
+}
+
+async function tryTheAudioDB(name) {
+  try {
+    const res = await fetch(
+      `https://www.theaudiodb.com/api/v1/json/2/search.php?s=${encodeURIComponent(name)}`
+    );
+    if (!res.ok) return null;
+    const d = await res.json();
+    const a = d?.artists?.[0];
+    if (!a) return null;
+    return a.strArtistThumb || a.strArtistFanart || a.strArtistBanner || null;
+  } catch { return null; }
+}
+
+// MusicBrainz → Cover Art Archive for artist thumbnails
+async function tryMusicBrainzImage(name) {
+  try {
+    const searchRes = await fetch(
+      `https://musicbrainz.org/ws/2/artist/?query=artist:${encodeURIComponent(name)}&fmt=json&limit=3`,
+      { headers: { 'User-Agent': 'EchoTracks/1.0 (music-discovery-app)' } }
+    );
+    if (!searchRes.ok) return null;
+    const d = await searchRes.json();
+    const artists = d?.artists || [];
+    const match = artists.find(a => a.name.toLowerCase() === name.toLowerCase()) || artists[0];
+    if (!match?.id) return null;
+
+    // Try to get an image from the artist's release group covers
+    const relRes = await fetch(
+      `https://musicbrainz.org/ws/2/release-group/?artist=${match.id}&type=album&fmt=json&limit=5`,
+      { headers: { 'User-Agent': 'EchoTracks/1.0 (music-discovery-app)' } }
+    );
+    if (!relRes.ok) return null;
+    const relData = await relRes.json();
+    const groups = relData?.['release-groups'] || [];
+    for (const rg of groups) {
+      try {
+        const covRes = await fetch(`https://coverartarchive.org/release-group/${rg.id}/front`);
+        if (covRes.ok) return covRes.url; // follow the redirect
+      } catch {}
+    }
+    return null;
+  } catch { return null; }
+}
+
+// Last.fm artist image (from their API — sometimes has images when others don't)
+async function tryLastFmImage(name) {
+  try {
+    const url = new URL(LFM_BASE);
+    url.searchParams.set('method', 'artist.getInfo');
+    url.searchParams.set('api_key', LFM_KEY);
+    url.searchParams.set('format', 'json');
+    url.searchParams.set('artist', name);
+    url.searchParams.set('autocorrect', '1');
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const d = await res.json();
+    const images = d?.artist?.image || [];
+    // Last.fm images: sizes are 'small','medium','large','extralarge','mega'
+    const mega = images.find(i => i.size === 'mega' && i['#text']) ||
+                 images.find(i => i.size === 'extralarge' && i['#text']);
+    const src = mega?.['#text'];
+    if (!src || src.includes('2a96cbd8b46e442fc41c2b86b821562f')) return null; // default placeholder
+    return src;
+  } catch { return null; }
+}
+
+// Music-aware Wikipedia: tries "Band", "musician", "singer" disambiguations
+// AND validates the image is actually a person/band (not a king or tool)
+async function tryWikipediaMusic(name) {
+  const slugVariants = [
+    `${name.replace(/ /g,'_')}_(band)`,
+    `${name.replace(/ /g,'_')}_(musician)`,
+    `${name.replace(/ /g,'_')}_(singer)`,
+    `${name.replace(/ /g,'_')}_(rapper)`,
+    `${name.replace(/ /g,'_')}_(artist)`,
+    name.replace(/ /g,'_')   // plain last, lowest priority
+  ];
+  for (const slug of slugVariants) {
+    try {
+      const res = await fetch(
+        `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(slug)}`,
+        { headers: { Accept: 'application/json' } }
+      );
+      if (!res.ok) continue;
+      const d = await res.json();
+      if (d.type === 'disambiguation') continue;
+      // Validate: page should be about a musician/band, not a royalty, tool, etc.
+      const desc = (d.description || '').toLowerCase();
+      const extract = (d.extract || '').toLowerCase();
+      // Reject if it looks like a non-music result
+      const musicTerms = ['band','musician','singer','rapper','artist','group','vocalist','guitarist','drummer','producer','record','album','music','rock','metal','pop','jazz','hip'];
+      const isMusicPage = musicTerms.some(t => desc.includes(t) || extract.slice(0,300).includes(t));
+      // For disambiguated slugs (e.g. _band, _musician) trust the result; only reject plain slug
+      const isDisambiguated = slug !== name.replace(/ /g,'_');
+      if (!isMusicPage && !isDisambiguated) continue;
+      const src = d?.originalimage?.source || d?.thumbnail?.source;
+      if (!src) continue;
+      return src.replace(/\/\d+px-([^/]+)$/, '/400px-$1');
+    } catch { continue; }
+  }
+  return null;
+}
+
+async function tryItunes(name) {
+  try {
+    const res = await fetch(
+      `https://itunes.apple.com/search?term=${encodeURIComponent(name)}&entity=musicArtist&limit=5`
+    );
+    if (!res.ok) return null;
+    const d = await res.json();
+    const results = d?.results || [];
+    const exact = results.find(r => r.artistName?.toLowerCase() === name.toLowerCase());
+    const hit = exact || results[0];
+    if (!hit?.artworkUrl100) return null;
+    return hit.artworkUrl100.replace('100x100bb', '400x400bb');
+  } catch { return null; }
+}
+
+// ─── LAST.FM API ──────────────────────────────────────────────────────────────
+async function lfm(method, params) {
+  const url = new URL(LFM_BASE);
+  url.searchParams.set('method', method);
+  url.searchParams.set('api_key', LFM_KEY);
+  url.searchParams.set('format', 'json');
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Network error');
+  const data = await res.json();
+  if (data.error) throw new Error(data.message || 'Last.fm API error');
+  return data;
+}
+
+// ─── HIDDEN GEMS ALGORITHM ────────────────────────────────────────────────────
+// Last.fm's getSimilar returns artists in order of "match" score (highest first).
+// The PROBLEM: sorting by listener count doesn't work because Last.fm doesn't
+// include listener counts in getSimilar — so we get 0 for everyone, and the
+// filter catches random famous artists in positions 8-18.
+//
+// THE FIX: Use MATCH SCORE POSITION as the proxy for obscurity.
+// - Last.fm sorts similar artists by similarity: position 0 = most similar (often well known)
+// - Artists in positions 15-50 have lower match scores = more obscure connections
+// - We request 50 similar artists, use top 8 for "Similar", tail for "Gems"
+// - Extra filter: skip any artist whose name fuzzy-matches a known-famous list
+//   OR who appears in the top-8 similar list of ANY adjacent artist (too mainstream)
+// - We also fetch listener counts via artist.getInfo for gem CANDIDATES only
+//   and reject anyone with > 2M listeners (they're not hidden)
+
+async function buildGems(similarArtists, mainArtistName) {
+  // similar artists are already sorted by match DESC from Last.fm
+  // top 10 = fetched for Similar Artists (desktop shows 9 via CSS, mobile shows all 10)
+  const mainstream = similarArtists.slice(0, 10);
+
+  // Candidates: positions 12-50 (skip 9-12 buffer zone of "almost mainstream")
+  const candidates = similarArtists.slice(12, 50);
+
+  if (candidates.length === 0) return { mainstream, gems: [] };
+
+  // Fetch listener counts for candidates (batched, all in parallel)
+  const infoResults = await Promise.allSettled(
+    candidates.map(a =>
+      lfm('artist.getInfo', { artist: a.name, autocorrect: 1 })
+        .then(d => ({ name: a.name, listeners: parseInt(d?.artist?.stats?.listeners || 0) }))
+        .catch(() => ({ name: a.name, listeners: 999_999_999 }))
+    )
+  );
+
+  const candidatesWithListeners = infoResults
+    .filter(r => r.status === 'fulfilled')
+    .map(r => r.value);
+
+  // Hidden gem criteria: < 2M listeners
+  const gems = candidatesWithListeners
+    .filter(a => a.listeners < 2_000_000)
+    .slice(0, 10); // 10 gems
+
+  return { mainstream, gems };
+}
+
+// ─── TRAIL ────────────────────────────────────────────────────────────────────
+function pushTrail(name) {
+  if (trail[trail.length - 1] !== name) trail.push(name);
+  renderTrail();
+}
+
+function renderTrail() {
+  const section = document.getElementById('trail-section');
+  if (trail.length < 2) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  const el = document.getElementById('trail');
+  el.innerHTML = '';
+  trail.forEach((n, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'trail-item';
+    const span = document.createElement('span');
+    span.className = 'trail-name' + (i === trail.length - 1 ? ' current' : '');
+    span.textContent = n;
+    if (i < trail.length - 1) span.onclick = () => doSearch(n, false);
+    wrap.appendChild(span);
+    if (i < trail.length - 1) {
+      const arr = document.createElement('span');
+      arr.className = 'trail-arrow';
+      arr.textContent = '→';
+      wrap.appendChild(arr);
+    }
+    el.appendChild(wrap);
+  });
+}
+
+// ─── RENDER HERO ──────────────────────────────────────────────────────────────
+function renderHero(artist) {
+  document.getElementById('artist-hero').style.display = 'block';
+  document.getElementById('results-section').style.display = 'block';
+
+  // Placeholder immediately
+  const imgWrap = document.getElementById('hero-img-wrap');
+  imgWrap.innerHTML = `<div class="hero-img-placeholder" id="hero-placeholder">${initials(artist.name)}</div>`;
+  document.getElementById('hero-bg').style.background = 'linear-gradient(135deg, #101d35, #0b1120)';
+
+  document.getElementById('hero-name').textContent = artist.name;
+
+  const tags = artist.tags?.tag?.slice(0, 5) || [];
+  document.getElementById('hero-tags').innerHTML = tags.map(t => `<span class="tag">${t.name}</span>`).join('');
+
+  document.getElementById('hero-stats').innerHTML = `
+    <div class="stat">
+      <span class="stat-val">${fmt(artist.stats?.listeners)}</span>
+      <span class="stat-label">Listeners</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val">${fmt(artist.stats?.playcount)}</span>
+      <span class="stat-label">Total Plays</span>
+    </div>`;
+
+  const bio = stripHtml(artist.bio?.summary || '');
+  const bioEl = document.getElementById('hero-bio');
+  const moreEl = document.getElementById('bio-more');
+  bioEl.textContent = bio;
+  if (bio) {
+    bioEl.style.maxHeight = '70px';
+    setTimeout(() => {
+      if (bioEl.scrollHeight > bioEl.clientHeight + 4) moreEl.style.display = 'inline-block';
+    }, 80);
+  }
+
+  // Load image in background, swap in when ready
+  fetchArtistImage(artist.name).then(url => {
+    if (!url) return;
+    const heroBg = document.getElementById('hero-bg');
+    const placeholder = document.getElementById('hero-placeholder');
+    if (!placeholder) return; // user navigated away
+    heroBg.style.backgroundImage = `url('${url}')`;
+    const img = new Image();
+    img.className = 'hero-img';
+    img.alt = artist.name;
+    img.src = url;
+    img.title = 'Click to enlarge';
+    img.onclick = () => openLightbox(url);
+    img.onload = () => { if (placeholder.parentElement) placeholder.replaceWith(img); };
+    img.onerror = () => {};
+  });
+}
+
+function expandBio() {
+  document.getElementById('hero-bio').style.maxHeight = 'none';
+  document.getElementById('bio-more').style.display = 'none';
+}
+
+// ─── RENDER TRACKS ────────────────────────────────────────────────────────────
+function renderTracks(tracks) {
+  const el = document.getElementById('tracks-list');
+  if (!tracks?.length) { el.innerHTML = '<div class="empty-state">No track data</div>'; return; }
+  el.innerHTML = tracks.map((t, i) => `
+    <div class="track-item" id="track-row-${i}" data-track="${escAttr(t.name)}" data-index="${i}" onclick="playTrack(this.dataset.track, parseInt(this.dataset.index))">
+      <span class="track-num">${i + 1}</span>
+      <div class="track-play-btn">▶</div>
+      <span class="track-name">${t.name}</span>
+      <span class="track-plays">${fmt(t.playcount)}</span>
+    </div>`).join('');
+}
+
+function escAttr(s) { return (s || '').replace(/'/g, "&#39;").replace(/"/g, '&quot;'); }
+
+// ─── PLAYER ───────────────────────────────────────────────────────────────────
+const YT_KEY = 'AIzaSyDMU0TRbWhNQFUn3szYdnmEnKlAe6l3tcY';
+let currentTrackIndex = -1;
+let currentArtistName = '';
+
+const audio = document.getElementById('player-audio');
+
+audio.addEventListener('ended', () => {
+  document.getElementById('player-play-btn').textContent = '▶';
+  document.getElementById('player-progress-fill').style.width = '0%';
+  document.getElementById('player-current').textContent = '0:00';
+  // Auto-advance to next track in the list
+  const trackItems = document.querySelectorAll('.track-item');
+  if (trackItems.length > 0 && currentTrackIndex >= 0) {
+    const nextIndex = currentTrackIndex + 1;
+    if (nextIndex < trackItems.length) {
+      const nextRow = document.getElementById(`track-row-${nextIndex}`);
+      if (nextRow) {
+        const trackName = nextRow.dataset.track;
+        playTrack(trackName, nextIndex, { noScroll: true });
+      }
+    }
+    // else: reached end of list, just stop
+  }
+});
+audio.addEventListener('timeupdate', () => {
+  if (!audio.duration) return;
+  const pct = (audio.currentTime / audio.duration) * 100;
+  document.getElementById('player-progress-fill').style.width = pct + '%';
+  document.getElementById('player-current').textContent = fmtTime(audio.currentTime);
+});
+audio.addEventListener('loadedmetadata', () => {
+  document.getElementById('player-duration').textContent = fmtTime(audio.duration);
+});
+audio.addEventListener('play',  () => document.getElementById('player-play-btn').textContent = '⏸');
+audio.addEventListener('pause', () => document.getElementById('player-play-btn').textContent = '▶');
+
+function fmtTime(s) {
+  const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+  return m + ':' + String(sec).padStart(2, '0');
+}
+function playerTogglePlay() { audio.paused ? audio.play() : audio.pause(); }
+function playerSetVolume(v) { audio.volume = parseFloat(v); }
+
+function playerNext() {
+  const trackItems = document.querySelectorAll('.track-item');
+  if (!trackItems.length || currentTrackIndex < 0) return;
+  const next = currentTrackIndex + 1;
+  if (next < trackItems.length) {
+    const row = document.getElementById(`track-row-${next}`);
+    if (row) playTrack(row.dataset.track, next, { noScroll: true });
+  }
+}
+
+function playerPrev() {
+  const trackItems = document.querySelectorAll('.track-item');
+  if (!trackItems.length || currentTrackIndex < 0) return;
+  if (audio.currentTime > 3) {
+    audio.currentTime = 0;
+    return;
+  }
+  const prev = currentTrackIndex - 1;
+  if (prev >= 0) {
+    const row = document.getElementById(`track-row-${prev}`);
+    if (row) playTrack(row.dataset.track, prev, { noScroll: true });
+  }
+}
+function playerSeek(e) {
+  const rect = document.getElementById('player-progress-track').getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  if (audio.duration) audio.currentTime = pct * audio.duration;
+}
+
+function pshow(id) { document.getElementById(id).style.display = 'flex'; }
+function phide(id) { document.getElementById(id).style.display = 'none'; }
+
+async function playTrack(trackName, index, { noScroll = false } = {}) {
+  document.querySelectorAll('.track-item').forEach(el => el.classList.remove('playing'));
+  const row = document.getElementById(`track-row-${index}`);
+  if (row) row.classList.add('playing');
+  currentTrackIndex = index;
+
+  audio.pause(); audio.src = '';
+
+  const section = document.getElementById('now-playing-section');
+  section.style.display = 'block';
+  if (!noScroll) section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  pshow('player-loading'); phide('player-ui'); phide('player-noresult');
+
+  // Always set fallback links
+  const q = encodeURIComponent(`${currentArtistName} ${trackName}`);
+  document.getElementById('player-spotify-link').href = `https://open.spotify.com/search/${q}`;
+  document.getElementById('player-yt-link').href      = `https://www.youtube.com/results?search_query=${q}`;
+  document.getElementById('nr-spotify').href          = `https://open.spotify.com/search/${q}`;
+  document.getElementById('nr-youtube').href          = `https://www.youtube.com/results?search_query=${q}`;
+
+  try {
+    const term = encodeURIComponent(`${currentArtistName} ${trackName}`);
+    const res  = await fetch(`https://itunes.apple.com/search?term=${term}&entity=song&limit=10&media=music`);
+    if (!res.ok) throw new Error('iTunes error');
+    const data = await res.json();
+    const results = data.results || [];
+    const aLow = currentArtistName.toLowerCase();
+    const tLow = trackName.toLowerCase();
+
+    // Best match: artist + track both match, has preview
+    const best =
+      results.find(r => r.previewUrl && r.artistName?.toLowerCase().includes(aLow) && r.trackName?.toLowerCase().includes(tLow)) ||
+      results.find(r => r.previewUrl && r.artistName?.toLowerCase().includes(aLow)) ||
+      results.find(r => r.previewUrl);
+
+    if (!best?.previewUrl) throw new Error('No preview');
+
+    document.getElementById('player-art').src            = (best.artworkUrl100||'').replace('100x100bb','300x300bb');
+    document.getElementById('player-track').textContent  = best.trackName  || trackName;
+    document.getElementById('player-artist').textContent = best.artistName || currentArtistName;
+    document.getElementById('player-progress-fill').style.width = '0%';
+    document.getElementById('player-current').textContent  = '0:00';
+    document.getElementById('player-duration').textContent = '0:30';
+    document.getElementById('player-play-btn').textContent = '▶';
+    audio.volume = parseFloat(document.getElementById('player-volume').value);
+
+    // Update links with exact match
+    const sq = encodeURIComponent(`${best.artistName} ${best.trackName}`);
+    document.getElementById('player-spotify-link').href = `https://open.spotify.com/search/${sq}`;
+    document.getElementById('player-yt-link').href      = `https://www.youtube.com/results?search_query=${sq}`;
+
+    phide('player-loading'); pshow('player-ui');
+
+    audio.src = best.previewUrl;
+    audio.load();
+    audio.play().catch(() => {
+      // Autoplay blocked - user must click play, button is ready
+    });
+
+  } catch(err) {
+    console.warn('Preview error:', err);
+    phide('player-loading'); pshow('player-noresult');
+  }
+}
+
+// ─── RENDER ARTIST CARDS ─────────────────────────────────────────────────────
+let cardIdCounter = 0;
+
+function renderArtistCards(artists, containerId, isGems = false) {
+  const el = document.getElementById(containerId);
+  if (!artists?.length) { el.innerHTML = '<div class="empty-state">No data available</div>'; return; }
+  el.innerHTML = '';
+
+  artists.forEach(a => {
+    const id = 'av-' + (cardIdCounter++);
+    const card = document.createElement('div');
+    card.className = 'artist-card' + (isGems ? ' gem' : '');
+    card.onclick = () => doSearch(a.name, true);
+
+    const subText = isGems && a.listeners
+      ? fmt(a.listeners) + ' listeners'
+      : '';
+
+    card.innerHTML = `
+      ${isGems ? '<span class="gem-badge">◆</span>' : ''}
+      <div class="artist-avatar-placeholder" id="${id}">${initials(a.name)}</div>
+      <div class="artist-card-name">${a.name}</div>
+      ${subText ? `<div class="artist-card-sub">${subText}</div>` : ''}
+      <div class="artist-card-explore">Explore →</div>`;
+
+    el.appendChild(card);
+
+    // Non-blocking image load
+    fetchArtistImage(a.name).then(url => {
+      if (!url) return;
+      const placeholder = document.getElementById(id);
+      if (!placeholder) return;
+      const img = new Image();
+      img.className = 'artist-avatar';
+      img.alt = a.name;
+      img.src = url;
+      img.onload = () => { if (placeholder.parentElement) placeholder.replaceWith(img); };
+      img.onerror = () => {};
+    });
+  });
+}
+
+// ─── SPOTIFY ──────────────────────────────────────────────────────────────────
+const SPOTIFY_CLIENT_ID     = '537af791efab448cb071f66223a3d2a9';
+const SPOTIFY_CLIENT_SECRET = '6196deeec39f4c3086302e41b8244734';
+let _spToken = null, _spExpiry = 0;
+
+// Primary: proper Client Credentials flow with ID + Secret (server-side safe for public data)
+async function getSpotifyToken() {
+  if (_spToken && Date.now() < _spExpiry) return _spToken;
+  try {
+    const res = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': 'Basic ' + btoa(SPOTIFY_CLIENT_ID + ':' + SPOTIFY_CLIENT_SECRET)
+      },
+      body: 'grant_type=client_credentials'
+    });
+    if (res.ok) {
+      const d = await res.json();
+      if (d.access_token) {
+        _spToken  = d.access_token;
+        _spExpiry = Date.now() + (d.expires_in - 60) * 1000;
+        return _spToken;
+      }
+    }
+    if (res.status === 429) throw new Error('rate_limited');
+  } catch (e) { if (e.message === 'rate_limited') throw e; }
+  throw new Error('Could not get Spotify token');
+}
+
+// Alias — both paths now use the same proper auth
+async function getSpotifyTokenPublic() {
+  return getSpotifyToken();
+}
+
+async function fetchSpotifyArtist(name) {
+  try {
+    const token = await getSpotifyTokenPublic();
+    const res = await fetch(
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(name)}&type=artist&limit=5`,
+      { headers: { Authorization: 'Bearer ' + token } }
+    );
+    if (res.status === 429) {
+      const retry = res.headers.get('Retry-After') || '60';
+      console.warn(`Spotify rate limited. Retry after ${retry}s`);
+      showSpotifyRateLimitBanner(parseInt(retry));
+      return null;
+    }
+    if (!res.ok) { console.warn('Spotify artist fetch failed:', res.status); return null; }
+    const d = await res.json();
+    const items = d?.artists?.items || [];
+    const match = items.find(a => a.name.toLowerCase() === name.toLowerCase()) || items[0];
+    return match || null;
+  } catch (e) { console.warn('Spotify fetch error:', e); return null; }
+}
+
+function showSpotifyRateLimitBanner(retryAfter) {
+  const panel = document.getElementById('spotify-panel');
+  if (!panel) return;
+  panel.style.display = 'block';
+  const mins = Math.ceil(retryAfter / 60);
+  panel.innerHTML = `
+    <div style="padding:20px;text-align:center;color:var(--text-muted)">
+      <div style="font-size:1.8rem;margin-bottom:10px">⏳</div>
+      <div style="font-weight:600;color:var(--text);margin-bottom:6px">Spotify Rate Limited</div>
+      <div style="font-size:0.82rem;line-height:1.6">
+        Too many requests were made to Spotify's API.<br>
+        Please wait <strong style="color:#1db954">~${mins} minute${mins !== 1 ? 's' : ''}</strong> and search again.
+      </div>
+    </div>`;
+}
+
+async function fetchSpotifyAlbums(artistId) {
+  try {
+    const token = await getSpotifyTokenPublic();
+    // Fetch a bigger pool so we can filter and still have 8 good ones
+    const res = await fetch(
+      `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album&market=US&limit=50`,
+      { headers: { Authorization: 'Bearer ' + token } }
+    );
+    if (!res.ok) return [];
+    const d = await res.json();
+    const items = d.items || [];
+
+    // Keywords that indicate live, remaster, deluxe, compilation, anniversary editions
+    const JUNK_RE = /\b(live|remaster(?:ed)?|reissue|anniversary|edition|deluxe|expanded|collector|box set|b-sides|rarities|acoustic|unplugged|demo|bootleg|greatest hits?|best of|compilation|collection|the complete|super deluxe|redux)\b/i;
+
+    // De-dupe by normalized base name (strip parentheticals like "(Deluxe Edition)")
+    const seen = new Map(); // normalized name → album
+    for (const a of items) {
+      const baseName = a.name
+        .replace(/\s*[\(\[–-][^)\]]*[\)\]]/g, '') // strip (Deluxe), [Remaster], etc.
+        .replace(/\s*[-–]\s*(remaster|deluxe|live|edition|expanded).*/gi, '')
+        .trim()
+        .toLowerCase();
+      if (!seen.has(baseName)) seen.set(baseName, a);
+    }
+
+    const unique = [...seen.values()];
+
+    // Split: clean studio albums vs everything else
+    const clean  = unique.filter(a => !JUNK_RE.test(a.name));
+    const others = unique.filter(a =>  JUNK_RE.test(a.name));
+
+    // Sort each group by release date ascending (oldest first = chronological catalog)
+    // This gives a "most famous" feel — classic albums first
+    const byDate = (a, b) => (a.release_date || '').localeCompare(b.release_date || '');
+    clean.sort(byDate);
+    others.sort(byDate);
+
+    // Build final list: prefer clean, fill with others only if < 8
+    const final = [...clean, ...others].slice(0, 50);
+
+    // Batch-fetch popularity for up to 20 albums in ONE request (not 20 separate calls)
+    const toScore = final.slice(0, 20);
+    const ids = toScore.map(a => a.id).join(',');
+    let scoredMap = {};
+    try {
+      const batchRes = await fetch(
+        `https://api.spotify.com/v1/albums?ids=${ids}&market=US`,
+        { headers: { Authorization: 'Bearer ' + token } }
+      );
+      if (batchRes.ok) {
+        const batchData = await batchRes.json();
+        (batchData.albums || []).forEach(a => {
+          if (a) scoredMap[a.id] = a.popularity || 0;
+        });
+      }
+    } catch {}
+
+    const scored = toScore.map(a => ({
+      ...a,
+      _popularity: scoredMap[a.id] ?? 0
+    }));
+
+    // Sort chronologically — oldest first, newest last
+    scored.sort((a, b) => (a.release_date || '').localeCompare(b.release_date || ''));
+
+    // Store full list for "View All", first 8 (oldest→newest) as default display
+    window._allSpotifyAlbums = [
+      ...scored,
+      ...final.slice(20).sort((a, b) => (a.release_date || '').localeCompare(b.release_date || ''))
+    ];
+
+    return scored.slice(0, 8);
+  } catch { return []; }
+}
+
+function renderSpotifyPanel(artist, albums) {
+  const panel = document.getElementById('spotify-panel');
+  panel.style.display = 'block';
+
+  const followers = artist.followers?.total;
+  document.getElementById('spotify-followers').textContent = followers ? fmt(followers) + ' followers' : '';
+
+  const pop = artist.popularity || 0;
+  setTimeout(() => { document.getElementById('spotify-pop-bar').style.width = pop + '%'; }, 100);
+  document.getElementById('spotify-pop-val').textContent = pop + '/100';
+
+  const genres = (artist.genres || []).slice(0, 6);
+  document.getElementById('spotify-genres').innerHTML = genres.length
+    ? genres.map(g => `<span class="genre-chip">${g}</span>`).join('')
+    : '<span style="color:var(--text-dim);font-size:0.8rem;padding:0 0 8px">No genre data</span>';
+
+  const albumEl = document.getElementById('spotify-albums');
+  if (!albums.length) {
+    albumEl.innerHTML = '<div style="padding:10px 20px;color:var(--text-dim);font-size:0.8rem">No albums found</div>';
+    return;
+  }
+
+  // Store visible albums for lightbox, full list for "View All"
+  window._lbAlbums    = albums;  // top 8 popular
+  const allAlbums     = window._allSpotifyAlbums || albums;
+
+  function albumCardHTML(a, i, globalIdx) {
+    const img  = a.images?.[0]?.url;
+    const year = (a.release_date || '').slice(0, 4);
+    return `<div class="album-card" onclick="openAlbumLightbox(${globalIdx})" title="${escAttr(a.name)}${year ? ' (' + year + ')' : ''}">
+      ${img
+        ? `<img class="album-card-img" src="${escAttr(img)}" alt="${escAttr(a.name)}" loading="lazy">`
+        : `<div class="album-card-placeholder">💿</div>`}
+      <div class="album-card-zoom">⤢</div>
+      <div class="album-card-info">
+        <div class="album-card-name">${a.name}</div>
+        <div class="album-card-year">${year || '—'}</div>
+      </div>
+    </div>`;
+  }
+
+  const hasMore = allAlbums.length > 8;
+
+  // Main grid: first 8 (popular)
+  const mainCards = albums.map((a, i) => albumCardHTML(a, i, i)).join('');
+
+  // Extra grid: remaining albums (indices 8+)
+  const extraAlbums = hasMore ? allAlbums.slice(8) : [];
+  // For lightbox, wire all albums together
+  window._lbAlbums = allAlbums.slice(0, 8); // start with popular; expand on "view all"
+
+  const extraCards = extraAlbums.map((a, i) => albumCardHTML(a, i, 8 + i)).join('');
+
+  albumEl.innerHTML = `
+    <div class="album-grid-section">
+      <div class="album-grid-main">${mainCards}</div>
+      ${hasMore ? `
+        <div class="album-grid-extra" id="album-grid-extra">${extraCards}</div>
+        <button class="album-view-all-btn" id="album-view-all-btn" onclick="toggleAllAlbums()">
+          ▼ View All Albums (${allAlbums.length} total)
+        </button>` : ''}
+    </div>`;
+}
+
+function toggleAllAlbums() {
+  const extra   = document.getElementById('album-grid-extra');
+  const btn     = document.getElementById('album-view-all-btn');
+  const section = btn?.closest('.album-grid-section');
+  const allAlbums = window._allSpotifyAlbums || [];
+  if (!extra || !btn) return;
+
+  const isOpen = extra.classList.contains('visible');
+  if (isOpen) {
+    extra.classList.remove('visible');
+    if (section) section.classList.remove('expanded');
+    btn.textContent = `▼ View All Albums (${allAlbums.length} total)`;
+    window._lbAlbums = window._allSpotifyAlbums || [];
+  } else {
+    extra.classList.add('visible');
+    if (section) section.classList.add('expanded');
+    btn.textContent = `▲ Hide Albums`;
+    window._lbAlbums = allAlbums;
+    extra.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+// ─── MUSICBRAINZ ──────────────────────────────────────────────────────────────
+async function fetchMusicBrainz(name) {
+  try {
+    // Search for the artist
+    const searchRes = await fetch(
+      `https://musicbrainz.org/ws/2/artist/?query=artist:${encodeURIComponent(name)}&fmt=json&limit=5`,
+      { headers: { 'User-Agent': 'EchoTracks/1.0 (music-discovery-app)' } }
+    );
+    if (!searchRes.ok) return null;
+    const searchData = await searchRes.json();
+    const artists = searchData?.artists || [];
+    const match = artists.find(a => a.name.toLowerCase() === name.toLowerCase()) || artists[0];
+    if (!match) return null;
+
+    // Fetch full artist details with relations
+    const detailRes = await fetch(
+      `https://musicbrainz.org/ws/2/artist/${match.id}?inc=artist-rels+url-rels+tags&fmt=json`,
+      { headers: { 'User-Agent': 'EchoTracks/1.0 (music-discovery-app)' } }
+    );
+    if (!detailRes.ok) return match; // return basic data if detail fails
+    const detail = await detailRes.json();
+    return { ...match, ...detail };
+  } catch { return null; }
+}
+
+function renderMusicBrainzPanel(mb, lfmArtist, spArtist) {
+  const panel = document.getElementById('mb-panel');
+  panel.style.display = 'block';
+
+  const rows = [];
+
+  // Type
+  if (mb?.type) rows.push(['Type', mb.type]);
+
+  // Origin
+  const area = mb?.area?.name || mb?.['begin-area']?.name;
+  if (area) rows.push(['Origin', area]);
+
+  // Formed / Born
+  const begin  = mb?.['life-span']?.begin;
+  const end    = mb?.['life-span']?.end;
+  const isEnded = mb?.['life-span']?.ended;
+  if (begin) {
+    rows.push([mb?.type === 'Person' ? 'Born' : 'Formed', begin.slice(0,4)]);
+  }
+  if (end && isEnded) {
+    rows.push([mb?.type === 'Person' ? 'Died' : 'Disbanded', end.slice(0,4)]);
+  }
+
+  // Years Active (calculated)
+  if (begin) {
+    const startY = parseInt(begin.slice(0,4));
+    const endY   = isEnded && end ? parseInt(end.slice(0,4)) : new Date().getFullYear();
+    const span   = endY - startY;
+    if (span > 0) rows.push(['Years Active', isEnded ? `${span} years (${startY}–${endY})` : `${span} years`]);
+  }
+
+  // Genres — from Spotify (more detailed) or Last.fm tags
+  const spGenres = (spArtist?.genres || []).slice(0,3);
+  const lfmTags  = (lfmArtist?.tags?.tag || []).map(t => t.name).slice(0,3);
+  const genres   = spGenres.length ? spGenres : lfmTags;
+  if (genres.length) rows.push(['Genres', genres.map(g => g.charAt(0).toUpperCase()+g.slice(1)).join(', ')]);
+
+  // Last.fm stats
+  const listeners = lfmArtist?.stats?.listeners;
+  const plays     = lfmArtist?.stats?.playcount;
+  if (listeners) rows.push(['Last.fm Listeners', fmt(listeners)]);
+  if (plays)     rows.push(['Last.fm Total Plays', fmt(plays)]);
+
+  // Spotify stats — public API gives followers + popularity (not stream counts, those are private)
+  if (spArtist?.followers?.total) rows.push(['Spotify Followers', fmt(spArtist.followers.total)]);
+  if (spArtist?.popularity) {
+    const p     = spArtist.popularity;
+    const label = p >= 75 ? 'Very High 🔥' : p >= 55 ? 'High 📈' : p >= 35 ? 'Medium' : 'Underground 🕶';
+    rows.push(['Spotify Popularity', `${p}/100 — ${label}`]);
+  }
+
+  // MusicBrainz tags
+  const mbTags = (mb?.tags || []).sort((a,b)=>b.count-a.count).slice(0,3).map(t=>t.name);
+  if (mbTags.length && !genres.length) rows.push(['Tags', mbTags.join(', ')]);
+
+  const infoEl = document.getElementById('mb-info-rows');
+  infoEl.innerHTML = rows.length
+    ? rows.map(([label, val]) => `
+        <div class="info-row">
+          <span class="info-row-label">${label}</span>
+          <span class="info-row-val">${val}</span>
+        </div>`).join('')
+    : '<div class="info-row"><span class="info-row-val" style="color:var(--text-dim)">No data found</span></div>';
+
+  // Members
+  const members = (mb?.relations || [])
+    .filter(r => r.type === 'member of band' && r.direction === 'backward' && r.artist)
+    .map(r => r.artist.name)
+    .filter((v,i,a) => a.indexOf(v)===i)
+    .slice(0,16);
+
+  if (members.length) {
+    document.getElementById('mb-members-wrap').style.display = 'block';
+    document.getElementById('mb-members').innerHTML =
+      members.map(m => `<span class="member-chip">${m}</span>`).join('');
+  } else {
+    document.getElementById('mb-members-wrap').style.display = 'none';
+  }
+}
+
+// ─── WIKIPEDIA ────────────────────────────────────────────────────────────────
+async function fetchWikipedia(name) {
+  const titles = [
+    `${name} (band)`,
+    `${name} (musician)`,
+    `${name} (singer)`,
+    `${name} (rapper)`,
+    name
+  ];
+
+  for (const title of titles) {
+    try {
+      // Fetch intro paragraphs (for display) + full plain-text (for fact mining)
+      const [introRes, fullRes] = await Promise.all([
+        fetch(`https://en.wikipedia.org/w/api.php?${new URLSearchParams({
+          action: 'query', titles: title, prop: 'extracts|info',
+          exintro: '1', explaintext: '1', inprop: 'url',
+          redirects: '1', format: 'json', origin: '*'
+        })}`),
+        fetch(`https://en.wikipedia.org/w/api.php?${new URLSearchParams({
+          action: 'query', titles: title, prop: 'extracts',
+          explaintext: '1', exsectionformat: 'plain',
+          redirects: '1', format: 'json', origin: '*'
+        })}`)
+      ]);
+
+      if (!introRes.ok) continue;
+      const introData = await introRes.json();
+      const introPage = Object.values(introData?.query?.pages || {})[0];
+      if (!introPage || introPage.missing !== undefined || !introPage.extract) continue;
+
+      // Full text for fact mining
+      let fullText = introPage.extract;
+      if (fullRes.ok) {
+        const fullData = await fullRes.json();
+        const fullPage = Object.values(fullData?.query?.pages || {})[0];
+        if (fullPage?.extract) fullText = fullPage.extract;
+      }
+
+      const paragraphs = introPage.extract
+        .split(/\n+/).map(p => p.trim()).filter(p => p.length > 80);
+
+      if (!paragraphs.length) continue;
+
+      return {
+        paragraphs,
+        fullText,   // full article for fact mining
+        pageUrl: introPage.fullurl || `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g,'_'))}`,
+        title: introPage.title
+      };
+    } catch { continue; }
+  }
+  return null;
+}
+
+function renderWikiPanel(wiki) {
+  if (!wiki?.paragraphs?.length) return;
+  document.getElementById('wiki-panel').style.display = 'block';
+
+  const paras   = wiki.paragraphs;
+  const first   = `<p style="margin:0 0 12px">${paras[0]}</p>`;
+  const rest    = paras.slice(1).map(p => `<p style="margin:0 0 12px">${p}</p>`).join('');
+  const hasMore = rest.length > 0;
+
+  document.getElementById('wiki-body').innerHTML =
+    `<div id="wiki-first">${first}</div>` +
+    (hasMore ? `<div id="wiki-more-text" style="display:none">${rest}</div>` : '') +
+    `<div id="wiki-btn-row" style="display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap">
+      ${hasMore ? `<button class="wiki-inline-btn" id="wiki-inline-more" onclick="expandWiki()">Read more ↓</button>` : ''}
+      <button class="wiki-inline-btn wiki-inline-collapse" id="wiki-inline-collapse" style="display:none" onclick="collapseWiki()">Collapse ↑</button>
+      <a class="wiki-inline-btn wiki-inline-ext" href="${wiki.pageUrl}" target="_blank" rel="noopener">View on Wikipedia ↗</a>
+    </div>`;
+}
+
+function expandWiki() {
+  const t = document.getElementById('wiki-more-text');
+  if (t) t.style.display = 'block';
+  const more     = document.getElementById('wiki-inline-more');
+  const collapse = document.getElementById('wiki-inline-collapse');
+  if (more)     more.style.display     = 'none';
+  if (collapse) collapse.style.display = 'inline-block';
+}
+
+function collapseWiki() {
+  const t = document.getElementById('wiki-more-text');
+  if (t) t.style.display = 'none';
+  const more     = document.getElementById('wiki-inline-more');
+  const collapse = document.getElementById('wiki-inline-collapse');
+  if (more)     more.style.display     = 'inline-block';
+  if (collapse) collapse.style.display = 'none';
+  document.getElementById('wiki-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ─── DID YOU KNOW — powered by TheAudioDB + cross-API data ──────────────────
+async function fetchAudioDBFacts(name) {
+  try {
+    const res = await fetch(
+      `https://www.theaudiodb.com/api/v1/json/2/search.php?s=${encodeURIComponent(name)}`
+    );
+    if (!res.ok) return null;
+    const d = await res.json();
+    return d?.artists?.[0] || null;
+  } catch { return null; }
+}
+
+function buildFacts(artist, mbData, wikiData, spArtist, albums, adbData) {
+  const pool      = [];
+  const name      = artist.name;
+  const lfmList   = parseInt(artist.stats?.listeners || 0);
+  const lfmPlays  = parseInt(artist.stats?.playcount || 0);
+  const lfmAvg    = lfmList > 0 ? Math.round(lfmPlays / lfmList) : 0;
+  const spPop     = spArtist?.popularity       || 0;
+  const spFoll    = spArtist?.followers?.total || 0;
+  const spGenres  = spArtist?.genres           || [];
+  // Use full article text when available — far richer than intro only
+  const wikiText  = wikiData?.fullText || wikiData?.paragraphs?.join(' ') || '';
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // WIKIPEDIA — mine the full article for genuinely artist-specific facts
+  // Every match here produces a fact unique to this artist
+  // ─────────────────────────────────────────────────────────────────────────────
+  if (wikiText) {
+
+    // Better sentence splitting — handles "No.", "vs.", "Mr.", "Dr." etc.
+    // by not splitting on periods followed by a lowercase letter or digit
+    const rawSents = wikiText
+      .replace(/\n+/g, ' ')
+      // Protect known abbreviations from being split on
+      .replace(/\b(Mr|Mrs|Ms|Dr|St|Jr|Sr|vs|Vol|No|Inc|Ltd|etc)\.\s+/g, '$1__DOT__ ')
+      .split(/(?<=[.!?])\s+(?=[A-Z"'(]|\d{4})/)
+      .map(s => s.replace(/__DOT__/g, '.').trim())
+      .filter(s => s.length > 40 && s.length < 280);
+
+    // Quality filter: sentence must start cleanly, not be a fragment
+    const BAD_STARTS = /^(?:and|but|or|so|yet|nor|for|although|however|which|who|that|with|by|from|in |on |at |of |to |a |an |the |\()/i;
+    const sentences  = rawSents.filter(s => !BAD_STARTS.test(s));
+
+    // findSentence: returns a clean, complete sentence matching pattern — or null
+    // Never truncates: if a sentence is too long to show cleanly, skip it
+    function findSentence(pattern) {
+      for (const s of sentences) {
+        if (!pattern.test(s)) continue;
+        const firstWord = s.split(/\s+/)[0].toLowerCase().replace(/[^a-z]/g, '');
+        // Skip fragments that start with conjunctions
+        if (['and','but','or','so','yet','nor','also','however','although','though','with','by','from'].includes(firstWord)) continue;
+        // Skip parenthetical fragments
+        if (s.startsWith('(') || s.startsWith('"')) continue;
+        // Skip sentences that are too long — they're complex and risk sounding weird
+        if (s.length > 180) continue;
+        // Skip sentences with em-dashes mid-sentence (complex embedded clauses)
+        if ((s.match(/–/g) || []).length > 1) continue;
+        // Skip sentences ending with an abbreviation like "Mr." "Dr." "St." — they're truncated
+        if (/\b(?:Mr|Mrs|Ms|Dr|St|Jr|Sr|vs|Vol|No|Inc|Ltd|etc)\.$/.test(s)) continue;
+        // Skip sentences that end with a preposition or article — truncated
+        if (/\b(?:the|a|an|of|for|in|on|at|to|with|by|and|or|but|from|as)\s*[.!?]?$/i.test(s)) continue;
+        // Must end with a sentence-terminating punctuation or a closing quote
+        if (!/[.!?'"'"]$/.test(s)) continue;
+        return s;
+      }
+      return null;
+    }
+
+    // ── Deaths — lower weight, only show for artists where it's a defining fact ──
+    const diedSent = findSentence(/\b(?:died|passed away|was found dead)\b/i);
+    if (diedSent) {
+      const hasName  = /[A-Z][a-z]+ [A-Z][a-z]+/.test(diedSent);
+      const isAnimal = /\b(?:horse|dog|cat|pet|animal|bird|snake)\b/i.test(diedSent);
+      // Only show death fact if it features a real named person, not an animal
+      if (hasName && !isAnimal) {
+        pool.push({ w: 7, t: `🖤 ${diedSent}` }); // weight 7, not 12 — death is one fact among many
+      }
+    }
+
+    // ── Record sales — build fact from extracted number, not raw sentence ──────
+    const salesMatch = wikiText.match(/sold (?:over |more than |approximately |nearly )?([\d,.]+)\s*(million|billion) (?:copies|records|albums|units)/i);
+    if (salesMatch) {
+      const raw = parseFloat(salesMatch[1].replace(/,/g,''));
+      const unit = salesMatch[2].toLowerCase();
+      const n   = unit === 'billion' ? raw * 1000 : raw; // normalise to millions
+      const disp = `${salesMatch[1]} ${unit}`;
+      pool.push({ w: 11, t:
+        n >= 150 ? `💿 ${disp} records sold. Only a tiny handful of artists in history have reached that. ${name} are among them.`
+        : n >= 50 ? `💿 ${name} have sold ${disp} records — a number that places them among the all-time greats.`
+        : n >= 10 ? `💿 ${disp} records sold worldwide. In the streaming era, physical sales like that are remarkable.`
+        : `💿 ${name} have sold ${disp} records — real people who paid for the music.`
+      });
+    }
+
+    // ── Grammys — build from extracted data, never raw sentences ─────────────
+    const gwon = wikiText.match(/won (\w+|\d+) Grammy Award/i);
+    const gcat = wikiText.match(/Grammy Award for Best ([^\n,(.]{3,35})/i);
+    const gnom = wikiText.match(/(\d+) Grammy nominations?/i);
+    if (gwon) {
+      const n   = gwon[1];
+      // Only include category if it's a clean phrase (no dangling "for the song" etc.)
+      let cat = '';
+      if (gcat) {
+        const catText = gcat[1].trim().replace(/\.$/, '').replace(/\s+for the\s.*$/i, '').replace(/\s+for\s+[""""].*$/i, '').trim();
+        if (catText.length > 2 && catText.length < 40 && !/\bfor\b.*\bsong\b/i.test(catText)) {
+          cat = `, including Best ${catText}`;
+        }
+      }
+      pool.push({ w: 10, t: `🏆 ${name} have won ${n} Grammy Award${n==='1'||n==='one'?'':'s'}${cat}.` });
+    } else if (gnom) {
+      pool.push({ w: 9, t: `🏆 ${gnom[1]} Grammy nominations for ${name}. The industry took notice.` });
+    }
+
+    // ── Hall of Fame — always build, never grab raw sentence ─────────────────
+    if (/rock and roll hall of fame/i.test(wikiText)) {
+      const yr = wikiText.match(/inducted.{0,25}(\d{4})/i) || wikiText.match(/(\d{4}).{0,20}hall of fame/i);
+      pool.push({ w: 10, t: yr
+        ? `🏛️ Rock and Roll Hall of Fame, class of ${yr[1]}. ${name} are officially part of music history.`
+        : `🏛️ ${name} are in the Rock and Roll Hall of Fame — one of the most selective honours in music.`
+      });
+    }
+
+    // ── Hiatus — always build from extracted numbers ──────────────────────────
+    const hiatusM = wikiText.match(/(\d+)[- ]year (hiatus|break|absence|gap|silence)/i);
+    if (hiatusM) {
+      const yrs  = parseInt(hiatusM[1]);
+      pool.push({ w: 10, t:
+        yrs >= 10 ? `⏸️ ${name} went on a ${yrs}-year ${hiatusM[2]} — and fans were still there when they came back.`
+        : `⏸️ ${name} took a ${yrs}-year ${hiatusM[2]}. Long enough for a new wave of listeners to find the back catalogue.`
+      });
+    }
+
+    // ── Chart positions — only if we find a resolved number in the sentence ───
+    const chartSent = findSentence(/\b(?:number one|#1|No\.\s*\d+|reached number \d)\b/i);
+    if (chartSent && /(?:number one|#1|No\.\s*\d+|number \d)/.test(chartSent)) {
+      pool.push({ w: 8, t: `📈 ${chartSent}` });
+    }
+
+    // ── Certifications — use clean sentence ──────────────────────────────────
+    const diamondSent = findSentence(/\b(?:diamond[- ]certified|certified diamond)\b/i);
+    if (diamondSent) {
+      pool.push({ w: 10, t: `💎 ${diamondSent} (Diamond certification = 10 million+ units.)` });
+    } else {
+      const platSent = findSentence(/\b\d+[x×]?\s*(?:times\s*)?platinum\b/i);
+      if (platSent) pool.push({ w: 8, t: `🥇 ${platSent}` });
+    }
+
+    // ── Breakup & reunion — always build ─────────────────────────────────────
+    if (/(?:disbanded|broke up|split up).{0,200}(?:reunited|reformed|got back together)/is.test(wikiText)) {
+      pool.push({ w: 9, t: `🔄 ${name} broke up and reunited. The music was stronger than whatever split them apart.` });
+    }
+
+    // ── Controversy — only clean sentences, strict filter ────────────────────
+    const bannedSent = findSentence(/\b(?:banned|censored|prohibited)\b/i);
+    if (bannedSent && !/nuclear|weapon|export|import|country|government policy/i.test(bannedSent) && bannedSent.length > 50) {
+      pool.push({ w: 9, t: `🚫 ${bannedSent}` });
+    } else if (/PMRC|Tipper Gore|Senate hearing/i.test(wikiText)) {
+      pool.push({ w: 8, t: `🚫 ${name} were caught up in the 1980s PMRC controversy — US Senate hearings over whether their music was too dangerous for the public.` });
+    }
+
+    // ── Pioneer / invented — use clean sentence ───────────────────────────────
+    const pioneerSent = findSentence(/\b(?:pioneers? of|credited with (?:creating|pioneering|inventing)|one of the (?:first|earliest) (?:bands?|artists?|groups?) to)\b/i);
+    if (pioneerSent) pool.push({ w: 8, t: `🌊 ${pioneerSent}` });
+
+    // ── Record-breaking tour ──────────────────────────────────────────────────
+    const tourSent = findSentence(/\b(?:highest[- ]grossing|record[- ]breaking|most[- ]attended)\b.{0,60}tour/i);
+    if (tourSent) pool.push({ w: 9, t: `🎪 ${tourSent}` });
+
+    // ── Debut album — only if noteworthy ─────────────────────────────────────
+    const debutSent = findSentence(/\b(?:debut album|first album)\b/i);
+    if (debutSent && /\b(?:number one|#1|platinum|million|sold)\b/i.test(debutSent)) {
+      pool.push({ w: 8, t: `🚀 ${debutSent}` });
+    }
+
+    // ── Iconic song with a real resolved chart number ─────────────────────────
+    const iconicSent = findSentence(/[""][^""]{3,50}[""]\s*(?:reached|peaked|debuted|entered|charted)/i);
+    if (iconicSent && /\b(?:number \d+|#\d+|No\.\s*\d+|top \d+)\b/i.test(iconicSent)) {
+      pool.push({ w: 7, t: `🎵 ${iconicSent}` });
+    }
+
+    // ── Pioneer / influence ───────────────────────────────────────────────────
+    const infSent = findSentence(/\b(?:influenced|cited .{0,20} as an influence|named .{0,20} as an influence|stated that .{0,30} (?:was|were) influenced)\b/i);
+    if (infSent && infSent.length > 60) pool.push({ w: 6, t: `🌊 ${infSent}` });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // SPOTIFY ALBUMS — album gap is unique to this artist
+  // ─────────────────────────────────────────────────────────────────────────────
+  if (albums?.length >= 2) {
+    const JUNK_NAME = /\b(live|remaster(?:ed)?|deluxe|expanded|anniversary|edition|collector|b-sides|rarities|acoustic|unplugged|demo|bootleg|greatest hits?|best of|compilation|collection|super deluxe)\b/i;
+    const byYear = albums
+      .map(a => ({ n: a.name, y: parseInt((a.release_date||'').slice(0,4)) }))
+      .filter(a => a.y > 1950 && !JUNK_NAME.test(a.n))
+      .sort((a,b) => a.y - b.y);
+    const ys = byYear.map(a => a.y);
+
+    let maxGap = 0, gF = 0, gT = 0, gAlbum = '';
+    for (let i = 1; i < byYear.length; i++) {
+      const g = byYear[i].y - byYear[i-1].y;
+      if (g > maxGap) { maxGap = g; gF = byYear[i-1].y; gT = byYear[i].y; gAlbum = byYear[i].n; }
+    }
+    if (maxGap >= 8 && gAlbum) {
+      pool.push({ w: 10, t: `⏳ ${maxGap}-year wait. That's how long ${name} made fans wait between ${gF} and ${gT} before "${gAlbum}" arrived. The silence was deafening.` });
+    } else if (maxGap >= 5 && gAlbum) {
+      pool.push({ w: 7, t: `⏳ ${name}'s longest studio gap: ${maxGap} years (${gF}–${gT}). When "${gAlbum}" finally dropped, nobody was ready.` });
+    }
+
+    // Prolific early period
+    if (ys.length >= 4 && ys[3] - ys[0] <= 4) {
+      pool.push({ w: 6, t: `⚡ ${name} released ${ys.length >= 5 ? '5+' : '4'} albums in their first ${ys[3]-ys[0]+1} years. Relentless output from the jump.` });
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // SPOTIFY — popularity framed by genre context
+  // ─────────────────────────────────────────────────────────────────────────────
+  if (spArtist && spPop > 0) {
+    const g       = spGenres.join(' ');
+    const isNiche = /metal|punk|jazz|doom|black|shoegaze|grunge|noise|experimental|folk/i.test(g);
+    const genre1  = spGenres[0] || 'alternative';
+
+    if (spPop >= 85) {
+      pool.push({ w: 9, t: `🔥 Spotify popularity score: ${spPop}/100. ${name} aren't coasting on nostalgia — they're genuinely massive right now.` });
+    } else if (spPop >= 70 && isNiche) {
+      pool.push({ w: 9, t: `📊 ${spPop}/100 Spotify popularity in the ${genre1} space. That's almost unheard of — most ${genre1} acts cap out around 50.` });
+    } else if (spPop >= 55) {
+      pool.push({ w: 7, t: `📊 Spotify score: ${spPop}/100. Solidly in the range where new listeners find ${name} every single day.` });
+    } else if (spPop < 35 && spPop > 0) {
+      pool.push({ w: 5, t: `🕶️ ${spPop}/100 on Spotify. ${name} are what underground actually means.` });
+    }
+
+    if (spFoll >= 10_000_000) {
+      pool.push({ w: 8, t: `👥 ${fmt(spFoll)} Spotify followers. That number is larger than the entire population of Sweden.` });
+    } else if (spFoll >= 5_000_000) {
+      pool.push({ w: 7, t: `👥 ${fmt(spFoll)} Spotify followers — more than the population of New Zealand.` });
+    } else if (spFoll >= 1_000_000) {
+      const millions = (spFoll / 1_000_000).toFixed(1);
+      pool.push({ w: 6, t: `👥 ${fmt(spFoll)} Spotify followers. ${millions} million people who actively chose to stay connected to ${name}.` });
+    } else if (spFoll >= 100_000) {
+      pool.push({ w: 4, t: `👥 ${fmt(spFoll)} Spotify followers and counting. The word is spreading.` });
+    }
+
+    // Interesting genre combos
+    if (/progressive/i.test(g) && /metal/i.test(g))
+      pool.push({ w: 7, t: `🎼 Progressive metal — Spotify's genre tag for ${name}. Average track length: longer than most people's lunch break.` });
+    if (/jazz/i.test(g) && /metal|rock/i.test(g))
+      pool.push({ w: 8, t: `🎷 Jazz and metal in the same genre tag. Spotify's data on ${name} proves some sounds refuse to be categorised.` });
+    if (/shoegaze/i.test(g))
+      pool.push({ w: 7, t: `🌫️ Shoegaze — ${name}'s Spotify genre. A sound so buried in reverb that the guitar and vocals become one overwhelming texture.` });
+    if (/psychedel/i.test(g))
+      pool.push({ w: 6, t: `🌀 Psychedelic — Spotify's tag for ${name}. Music designed to reshape how you experience the next hour.` });
+    if (/doom/i.test(g))
+      pool.push({ w: 6, t: `🐌 Doom metal is ${name}'s genre. Built on the philosophy that slow and heavy hits harder than fast.` });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // LAST.FM — replay numbers only when genuinely extreme
+  // ─────────────────────────────────────────────────────────────────────────────
+  if (lfmList > 0 && lfmPlays > 0) {
+    if (lfmAvg >= 80) {
+      pool.push({ w: 10, t: `🔁 ${lfmAvg} plays per listener on Last.fm. The average ${name} fan hasn't just heard them — they've memorised every note.` });
+    } else if (lfmAvg >= 40) {
+      pool.push({ w: 8, t: `🎧 Last.fm average: ${lfmAvg} plays per listener. Most people hear an album twice and move on. Not ${name} fans.` });
+    } else if (lfmAvg >= 20) {
+      pool.push({ w: 6, t: `🎧 ${lfmAvg} scrobbles per listener on Last.fm. These fans keep coming back.` });
+    }
+    if (lfmPlays >= 1_000_000_000) {
+      pool.push({ w: 9, t: `📡 Over a billion Last.fm scrobbles for ${name}. Logged by real people who cared enough to track every single listen.` });
+    } else if (lfmPlays >= 300_000_000) {
+      pool.push({ w: 7, t: `📡 ${fmt(lfmPlays)} Last.fm scrobbles. That's hundreds of millions of voluntary, tracked listens.` });
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // THEAUDIODB — mood and theme when genuinely specific
+  // ─────────────────────────────────────────────────────────────────────────────
+  if (adbData) {
+    const theme = (adbData.strTheme || '').trim();
+    const mood  = (adbData.strMood  || '').trim();
+    const boring = ['life','love','general','various','misc','varied',''];
+
+    if (theme && !boring.includes(theme.toLowerCase())) {
+      pool.push({ w: 6, t: `📝 TheAudioDB's lyrical tag for ${name}: "${theme}". That's the universe they're building every time they write a song.` });
+    }
+
+    const moodLines = {
+      angry:      `"Angry" is TheAudioDB's one-word summary of ${name}. Accurate.`,
+      sad:        `TheAudioDB tags ${name} as "${mood}". Music that meets you where you actually are.`,
+      happy:      `"${mood}" — TheAudioDB's descriptor for ${name}. Put them on when you need a lift.`,
+      trippy:     `"${mood}" per TheAudioDB. ${name} reward full attention and good headphones.`,
+      aggressive: `"${mood}" — ${name} make no apologies for their intensity. Neither should you.`,
+      melancholic:`"${mood}" — ${name} specialise in the kind of music that sits with you after the song ends.`,
+      peaceful:   `"${mood}" is TheAudioDB's vibe tag for ${name}. Sometimes that's the only genre that matters.`,
+      dark:       `"${mood}" — ${name} aren't trying to cheer you up, and that's exactly right.`,
+      romantic:   `"${mood}" according to TheAudioDB. ${name} know how to set a scene.`,
+    };
+    const mk = Object.keys(moodLines).find(k => mood.toLowerCase().includes(k));
+    if (mk) pool.push({ w: 5, t: `🎭 ${moodLines[mk]}` });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // MUSICBRAINZ — member count only when it's a real story
+  // ─────────────────────────────────────────────────────────────────────────────
+  if (mbData) {
+    const members = (mbData.relations||[])
+      .filter(r => r.type === 'member of band' && r.direction === 'backward' && r.artist)
+      .map(r => r.artist.name).filter((v,i,a) => a.indexOf(v)===i);
+    if (members.length >= 20) {
+      pool.push({ w: 7, t: `🎭 ${members.length} people have been members of ${name}. The name endures — the cast keeps changing.` });
+    } else if (members.length >= 10) {
+      pool.push({ w: 5, t: `🎭 ${members.length} musicians in ${name}'s recorded history. That's a lot of stories inside one band name.` });
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Sort by weight + mild shuffle, de-dupe, return top 5
+  // ─────────────────────────────────────────────────────────────────────────────
+  pool.sort((a, b) => (b.w - a.w) + (Math.random() - 0.5) * 1.5);
+  const seen = new Set();
+  const out  = [];
+  for (const item of pool) {
+    const key = item.t.slice(0, 45);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(item.t);
+    if (out.length === 5) break;
+  }
+  return out;
+}
+
+function renderFactsPanel(facts) {
+  if (!facts.length) return;
+  document.getElementById('facts-panel').style.display = 'block';
+  document.getElementById('facts-list').innerHTML = facts.map(f => {
+    // Pull the first grapheme — if it's a real emoji symbol, use it as bullet
+    // We deliberately avoid \p{Emoji} because that class includes ASCII 0-9, #, *
+    // Instead we match only non-ASCII emoji ranges explicitly
+    const emojiRe = /^[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{25A0}-\u{25FF}\u{2B00}-\u{2BFF}️]/u;
+    const hasBullet = emojiRe.test(f);
+    // Grab bullet: everything up to and including the first emoji char sequence + trailing space
+    const bulletMatch = f.match(/^([\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{25A0}-\u{25FF}\u{2B00}-\u{2BFF}️\uFE0F]+)\s*/u);
+    const bullet = bulletMatch ? bulletMatch[1] : '•';
+    // Strip only the matched bullet prefix — never touch digits or letters
+    const text = bulletMatch ? f.slice(bulletMatch[0].length).trim() : f.trim();
+    return `<div class="fact-item"><span class="fact-bullet">${bullet}</span><span>${text}</span></div>`;
+  }).join('');
+}
+
+// ─── MAIN SEARCH ──────────────────────────────────────────────────────────────
+async function doSearch(artistName, isRabbitHole = false) {
+  artistName = artistName.trim();
+  if (!artistName) return;
+
+  hideError();
+  document.getElementById('search-input').value = artistName;
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('artist-hero').style.display = 'none';
+  document.getElementById('rabbit-hole-banner').style.display = 'none';
+
+  // Reset enriched panels
+  document.getElementById('spotify-panel').style.display  = 'none';
+  document.getElementById('mb-panel').style.display       = 'none';
+  document.getElementById('wiki-panel').style.display     = 'none';
+  document.getElementById('facts-panel').style.display    = 'none';
+  window._artistImages = [];
+
+  setLoading(true, `Discovering ${artistName}…`);
+  pushTrail(artistName);
+
+  try {
+    setLoading(true, 'Fetching artist data…');
+    const [infoData, tracksData, similarData] = await Promise.all([
+      lfm('artist.getInfo', { artist: artistName, autocorrect: 1 }),
+      lfm('artist.getTopTracks', { artist: artistName, autocorrect: 1, limit: 30 }),
+      lfm('artist.getSimilar', { artist: artistName, autocorrect: 1, limit: 50 })
+    ]);
+
+    const artist = infoData?.artist;
+    if (!artist) throw new Error('Artist not found on Last.fm.');
+
+    currentArtistName = artist.name;
+    document.querySelectorAll('.track-item').forEach(el => el.classList.remove('playing'));
+    currentTrackIndex = -1;
+
+    const rawTracks = tracksData?.toptracks?.track || [];
+    // Deduplicate by normalized name (handles "Sweet Dreams" / "Sweet Dreams (Are Made of This)" etc.)
+    const seenTrackNames = new Set();
+    const tracks = rawTracks.filter(t => {
+      const key = t.name.toLowerCase()
+        .replace(/\s*[\(\[].+[\)\]]/g, '') // strip parenthetical suffixes
+        .replace(/[^a-z0-9\s]/g, '')
+        .replace(/\s+/g, ' ').trim();
+      if (seenTrackNames.has(key)) return false;
+      seenTrackNames.add(key);
+      return true;
+    }).slice(0, 10);
+    const similar = similarData?.similarartists?.artist || [];
+
+    setLoading(true, 'Finding hidden gems…');
+    const { mainstream, gems } = await buildGems(similar, artist.name);
+
+    setLoading(false);
+    renderHero(artist);
+    renderTracks(tracks);
+
+    document.getElementById('similar-count').textContent = mainstream.length;
+    renderArtistCards(mainstream, 'similar-list', false);
+
+    if (gems.length > 0) {
+      document.getElementById('gems-count').textContent = gems.length;
+      document.getElementById('gems-intro').textContent =
+        `Artists connected to ${artist.name} with a deeper, less-obvious link — These are your next discoveries.`;
+      renderArtistCards(gems, 'gems-list', true);
+      document.getElementById('gems-section').style.display = 'block';
+    } else {
+      document.getElementById('gems-section').style.display = 'none';
+    }
+
+    if (isRabbitHole && trail.length > 1) {
+      document.getElementById('rabbit-hole-banner').style.display = 'block';
+    }
+
+    // ── Enrich with Spotify, MusicBrainz, Wikipedia in parallel (non-blocking) ──
+    const canonicalName = artist.name;
+    Promise.allSettled([
+      fetchSpotifyArtist(canonicalName),
+      fetchMusicBrainz(canonicalName),
+      fetchWikipedia(canonicalName),
+      fetchAudioDBFacts(canonicalName)
+    ]).then(async ([spRes, mbRes, wikiRes, adbRes]) => {
+      try {
+        const spArtist = spRes.status  === 'fulfilled' ? spRes.value  : null;
+        const mbData   = mbRes.status  === 'fulfilled' ? mbRes.value  : null;
+        const wikiData = wikiRes.status === 'fulfilled' ? wikiRes.value : null;
+        const adbData  = adbRes.status  === 'fulfilled' ? adbRes.value  : null;
+
+        // MusicBrainz + Wikipedia always render regardless of Spotify
+        try { renderMusicBrainzPanel(mbData, artist, spArtist); } catch(e) { console.error('MB panel error:', e); }
+        try { if (wikiData) renderWikiPanel(wikiData); } catch(e) { console.error('Wiki panel error:', e); }
+
+        // Spotify albums + stats panel
+        let albums = [];
+        if (spArtist?.id) {
+          try {
+            albums = await fetchSpotifyAlbums(spArtist.id);
+            renderSpotifyPanel(spArtist, albums);
+          } catch(e) { console.error('Spotify panel error:', e); }
+        }
+
+        // Collect all artist images for gallery lightbox (runs in background)
+        collectArtistImages(canonicalName, spArtist, adbData).then(imgs => {
+          if (imgs.length > 0) {
+            // Put the currently-displayed hero image first
+            const heroImg = document.querySelector('#hero-img-wrap img.hero-img');
+            const heroSrc = heroImg?.src;
+            if (heroSrc && !imgs.includes(heroSrc)) imgs.unshift(heroSrc);
+            window._artistImages = imgs;
+            // Update hero click to open gallery at index 0
+            if (heroImg) heroImg.onclick = () => openLightbox(heroSrc || imgs[0]);
+          }
+        }).catch(() => {});
+
+        // Did You Know facts
+        try {
+          const facts = buildFacts(artist, mbData, wikiData, spArtist, albums, adbData);
+          renderFactsPanel(facts);
+        } catch(e) { console.error('Facts error:', e); }
+
+      } catch(e) { console.error('Enrichment error:', e); }
+    });
+
+  } catch (err) {
+    setLoading(false);
+    showError('Could not find that artist. Check the spelling and try again. (' + err.message + ')');
+    document.getElementById('results-section').style.display = 'none';
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── ARTIST IMAGE GALLERY LIGHTBOX ───────────────────────────────────────────
+let _imgIdx = 0;
+
+function openLightbox(src) {
+  // Build gallery from all collected artist images, putting clicked image first
+  const all = (window._artistImages || [src]).filter(Boolean);
+  const startIdx = all.indexOf(src);
+  _imgIdx = startIdx >= 0 ? startIdx : 0;
+  if (!all.includes(src)) all.unshift(src);
+  window._artistImages = all;
+  renderImgLightbox();
+  document.getElementById('img-lightbox').classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  // Swipe support
+  let touchStartX = 0;
+  let swipeConsumed = false;
+  const lb = document.getElementById('img-lightbox');
+  lb._iTouchStart = (e) => { touchStartX = e.touches[0].clientX; swipeConsumed = false; };
+  lb._iTouchMove  = (e) => {
+    if (swipeConsumed) return;
+    const dx = e.touches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) { swipeConsumed = true; imgLbNav(dx < 0 ? 1 : -1); }
+  };
+  lb.removeEventListener('touchstart', lb._iTouchStart);
+  lb.removeEventListener('touchmove',  lb._iTouchMove);
+  lb.addEventListener('touchstart', lb._iTouchStart, { passive: true });
+  lb.addEventListener('touchmove',  lb._iTouchMove,  { passive: true });
+}
+
+function closeLightbox() {
+  document.getElementById('img-lightbox').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function imgLbNav(dir) {
+  const imgs = window._artistImages || [];
+  _imgIdx = Math.max(0, Math.min(imgs.length - 1, _imgIdx + dir));
+  renderImgLightbox();
+}
+
+function imgLbGoto(i) { _imgIdx = i; renderImgLightbox(); }
+
+function renderImgLightbox() {
+  const imgs  = window._artistImages || [];
+  const total = imgs.length;
+  const src   = imgs[_imgIdx];
+
+  // Blurred full-screen background using same image
+  const bg = document.getElementById('img-lb-bg');
+  if (bg) bg.style.backgroundImage = src ? `url('${src}')` : 'none';
+
+  const imgEl = document.getElementById('img-lightbox-img');
+  imgEl.style.opacity = '0';
+  imgEl.src = src || '';
+  imgEl.onload = () => { imgEl.style.opacity = '1'; };
+
+  document.getElementById('img-lb-counter').textContent =
+    total > 1 ? `${_imgIdx + 1} / ${total}` : '';
+
+  // Dots — only show if more than 1 image
+  const dotsEl = document.getElementById('img-lb-dots');
+  dotsEl.innerHTML = total > 1
+    ? imgs.map((_, i) => `<div class="img-lb-dot ${i === _imgIdx ? 'active' : ''}" onclick="imgLbGoto(${i})"></div>`).join('')
+    : '';
+
+  document.getElementById('img-lb-prev').classList.toggle('hidden', _imgIdx === 0);
+  document.getElementById('img-lb-next').classList.toggle('hidden', _imgIdx === total - 1);
+}
+
+// Close when clicking the dark backdrop
+document.getElementById('img-lightbox').addEventListener('click', function(e) {
+  if (e.target === this) closeLightbox();
+});
+
+// ─── ALBUM LIGHTBOX ──────────────────────────────────────────────────────────
+let _albIdx = 0;
+
+function openAlbumLightbox(idx) {
+  // Always use the full album list so lightbox can navigate all albums
+  const albums = window._allSpotifyAlbums || window._lbAlbums || [];
+  if (!albums.length) return;
+  window._lbAlbums = albums; // ensure lightbox always has full list
+  _albIdx = idx;
+  renderAlbumLightbox();
+  document.getElementById('album-lightbox').classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  // Swipe support — fire exactly once per gesture
+  let touchStartX = 0;
+  let swipeConsumed = false;
+  const lb = document.getElementById('album-lightbox');
+
+  lb._touchStart = (e) => {
+    touchStartX = e.touches[0].clientX;
+    swipeConsumed = false;
+  };
+  lb._touchMove = (e) => {
+    if (swipeConsumed) return;
+    const dx = e.touches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) {
+      swipeConsumed = true;
+      albumLbNav(dx < 0 ? 1 : -1);
+    }
+  };
+  lb.removeEventListener('touchstart', lb._touchStart);
+  lb.removeEventListener('touchmove',  lb._touchMove);
+  lb.addEventListener('touchstart', lb._touchStart, { passive: true });
+  lb.addEventListener('touchmove',  lb._touchMove,  { passive: true });
+}
+
+function closeAlbumLightbox() {
+  document.getElementById('album-lightbox').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function albumLbNav(dir) {
+  const albums = window._lbAlbums || [];
+  _albIdx = Math.max(0, Math.min(albums.length - 1, _albIdx + dir));
+  renderAlbumLightbox();
+}
+
+function renderAlbumLightbox() {
+  const albums = window._lbAlbums || [];
+  const a = albums[_albIdx];
+  if (!a) return;
+
+  const img   = a.images?.[0]?.url || '';
+  const year  = (a.release_date || '').slice(0, 4);
+  const total = albums.length;
+
+  const imgEl = document.getElementById('alb-lb-img');
+  imgEl.style.opacity = '0';
+  imgEl.src = img || '';
+  imgEl.style.display = img ? 'block' : 'none';
+  imgEl.onload = () => { imgEl.style.opacity = '1'; };
+  if (!img) imgEl.style.opacity = '1';
+
+  document.getElementById('alb-lb-title').textContent   = a.name;
+  document.getElementById('alb-lb-year').textContent    = year || '';
+  document.getElementById('alb-lb-counter').textContent = `${_albIdx + 1} / ${total}`;
+
+  // Dots
+  const dotsEl = document.getElementById('alb-lb-dots');
+  dotsEl.innerHTML = albums.map((_, i) =>
+    `<div class="alb-lb-dot ${i === _albIdx ? 'active' : ''}" onclick="albumLbGoto(${i})"></div>`
+  ).join('');
+
+  // Arrows
+  document.getElementById('alb-prev').classList.toggle('hidden', _albIdx === 0);
+  document.getElementById('alb-next').classList.toggle('hidden', _albIdx === total - 1);
+}
+
+function albumLbGoto(i) {
+  _albIdx = i;
+  renderAlbumLightbox();
+}
+
+// ─── COLLECT ALL ARTIST IMAGES FOR GALLERY ───────────────────────────────────
+async function collectArtistImages(name, spArtist, adbData) {
+  const imgs = [];
+  const seenBase = new Set(); // normalised URL base to catch same image at different sizes
+  const seenFile = new Set(); // filename to catch cross-domain duplicates
+
+  function add(url) {
+    if (!url || typeof url !== 'string' || !url.startsWith('http')) return;
+
+    // Extract filename (last path segment, no query/size prefix)
+    const filename = url.split('/').pop()
+      .replace(/\?.*$/, '')
+      .replace(/^\d+px-/, '')  // Wikipedia size prefix
+      .toLowerCase();
+
+    // Normalised base URL (strip size suffix/query)
+    const base = url
+      .replace(/\/\d+px-/, '/')
+      .replace(/\?.*$/, '')
+      .replace(/_(xl|big|medium|small|thumb)\./i, '.')
+      .replace(/\d{2,4}x\d{2,4}bb\./, '.')
+      .replace(/w=\d+/g, '')
+      .toLowerCase();
+
+    if (seenBase.has(base)) return;
+    if (filename.length > 5 && seenFile.has(filename)) return;
+
+    seenBase.add(base);
+    if (filename.length > 5) seenFile.add(filename);
+    imgs.push(url);
+  }
+
+  // 1. TheAudioDB — thumb + fanart only (NO banner — banners are logo/text, not photos)
+  if (adbData) {
+    add(adbData.strArtistThumb);
+    add(adbData.strArtistFanart);
+    add(adbData.strArtistFanart2);
+    add(adbData.strArtistFanart3);
+    add(adbData.strArtistFanart4);
+    // strArtistBanner intentionally excluded — always a wide text/logo banner, not a photo
+  }
+
+  // 2. Spotify — official artist photo (highest res)
+  if (spArtist?.images?.length) {
+    add(spArtist.images[0]?.url);
+  }
+
+  // 3. Deezer — good press photos, fast CORS-open API
+  try {
+    const dRes = await fetch(`https://api.deezer.com/search/artist?q=${encodeURIComponent(name)}&limit=5`);
+    if (dRes.ok) {
+      const dData = await dRes.json();
+      const matches = (dData?.data || []).filter(a =>
+        a.name.toLowerCase() === name.toLowerCase()
+      );
+      // Only exact name matches from Deezer — partial matches give wrong artists
+      matches.forEach(a => {
+        if (a.picture_xl) add(a.picture_xl);
+        else if (a.picture_big) add(a.picture_big);
+      });
+    }
+  } catch {}
+
+  // 4. Wikipedia — main article image (actual photo, not album art)
+  try {
+    const slugs = [`${name} (band)`, `${name} (musician)`, `${name} (singer)`, `${name} (rapper)`, name];
+    for (const slug of slugs) {
+      const r = await fetch(
+        `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(slug.replace(/ /g, '_'))}`,
+        { headers: { Accept: 'application/json' } }
+      );
+      if (!r.ok) continue;
+      const d = await r.json();
+      if (d.type === 'disambiguation') continue;
+      const src = d?.originalimage?.source || d?.thumbnail?.source;
+      if (src) {
+        add(src.replace(/\/\d+px-([^/]+)$/, '/600px-$1'));
+        break;
+      }
+    }
+  } catch {}
+
+  // iTunes intentionally excluded — returns album artwork and generic logos, not band photos
+
+  return imgs;
+}
+
+document.addEventListener('keydown', e => {
+  if (document.getElementById('album-lightbox').classList.contains('active')) {
+    if (e.key === 'ArrowLeft')  albumLbNav(-1);
+    if (e.key === 'ArrowRight') albumLbNav(1);
+    if (e.key === 'Escape')     closeAlbumLightbox();
+    return;
+  }
+  if (document.getElementById('img-lightbox').classList.contains('active')) {
+    if (e.key === 'ArrowLeft')  imgLbNav(-1);
+    if (e.key === 'ArrowRight') imgLbNav(1);
+    if (e.key === 'Escape')     closeLightbox();
+    return;
+  }
+});
+
+// Close album lightbox when clicking the dark backdrop (not the content)
+document.getElementById('album-lightbox').addEventListener('click', function(e) {
+  if (e.target === this) closeAlbumLightbox();
+});
+
+// ─── ENTRY POINTS ────────────────────────────────────────────────────────────
+function discover() {
+  const val = document.getElementById('search-input').value.trim();
+  if (!val) return;
+  trail = [];
+  doSearch(val, false);
+}
+
+function quickSearch(name) {
+  trail = [];
+  doSearch(name, false);
+}
+
+document.getElementById('search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') discover();
+});
+
+document.getElementById('search-input').addEventListener('focus', () => {
+  document.querySelector('.search-icon').style.color = 'var(--accent)';
+});
+document.getElementById('search-input').addEventListener('blur', () => {
+  document.querySelector('.search-icon').style.color = 'var(--text-dim)';
+});
+</script>
+</body>
+</html>
